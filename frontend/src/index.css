@@ -1,68 +1,167 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
+@layer base {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    /* Light Mode - Parchment & Mystical */
+    --background: 45 25% 96%;
+    --foreground: 30 15% 15%;
+
+    --card: 45 35% 98%;
+    --card-foreground: 30 15% 15%;
+
+    --popover: 45 35% 98%;
+    --popover-foreground: 30 15% 15%;
+
+    --primary: 30 40% 25%;
+    --primary-foreground: 45 35% 98%;
+
+    --secondary: 45 15% 90%;
+    --secondary-foreground: 30 40% 25%;
+
+    --muted: 45 15% 90%;
+    --muted-foreground: 30 10% 45%;
+
+    --accent: 142 40% 35%;
+    --accent-foreground: 45 35% 98%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 45 35% 98%;
+
+    --border: 45 15% 85%;
+    --input: 45 15% 85%;
+    --ring: 30 40% 25%;
+
+    /* Magical Colors */
+    --magical-purple: 260 70% 65%;
+    --magical-blue: 210 85% 60%;
+    --magical-gold: 45 95% 55%;
+    --magical-green: 142 60% 45%;
+    --wellness-gradient: linear-gradient(135deg, hsl(var(--magical-purple)), hsl(var(--magical-blue)));
+    --potion-gradient: linear-gradient(145deg, hsl(var(--magical-gold)), hsl(var(--magical-green)));
+    --mystical-glow: 0 0 20px hsl(var(--magical-purple) / 0.3);
+    --elixir-shadow: 0 8px 32px hsl(var(--magical-blue) / 0.15);
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
-  a:hover {
-    color: #747bff;
+
+  .dark {
+    /* Dark Mode - Deep Indigo & Mystical */
+    --background: 236 25% 8%;
+    --foreground: 45 35% 95%;
+
+    --card: 236 20% 12%;
+    --card-foreground: 45 35% 95%;
+
+    --popover: 236 20% 12%;
+    --popover-foreground: 45 35% 95%;
+
+    --primary: 45 35% 95%;
+    --primary-foreground: 236 25% 8%;
+
+    --secondary: 236 15% 20%;
+    --secondary-foreground: 45 35% 95%;
+
+    --muted: 236 15% 20%;
+    --muted-foreground: 45 10% 65%;
+
+    --accent: 260 70% 65%;
+    --accent-foreground: 236 25% 8%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 45 35% 95%;
+
+    --border: 236 15% 25%;
+    --input: 236 15% 25%;
+    --ring: 260 70% 65%;
+
+    /* Dark Mode Magical Colors */
+    --magical-purple: 260 70% 70%;
+    --magical-blue: 210 85% 65%;
+    --magical-gold: 45 95% 60%;
+    --magical-green: 142 60% 50%;
+    --wellness-gradient: linear-gradient(135deg, hsl(var(--magical-purple)), hsl(var(--magical-blue)));
+    --potion-gradient: linear-gradient(145deg, hsl(var(--magical-gold)), hsl(var(--magical-green)));
+    --mystical-glow: 0 0 30px hsl(var(--magical-purple) / 0.5);
+    --elixir-shadow: 0 8px 32px hsl(var(--magical-blue) / 0.3);
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
-  button {
-    background-color: #f9f9f9;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Magical Component Styles */
+  .potion-card {
+    @apply bg-gradient-to-br from-card to-card/80 border border-border/50 rounded-lg p-6 shadow-lg;
+    box-shadow: var(--elixir-shadow);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .potion-card:hover {
+    @apply scale-105 shadow-2xl;
+    box-shadow: var(--mystical-glow), var(--elixir-shadow);
+  }
+
+  .wellness-chart {
+    background: var(--wellness-gradient);
+    @apply rounded-xl p-6 text-white shadow-xl;
+  }
+
+  .streak-counter {
+    background: var(--potion-gradient);
+    @apply rounded-xl p-6 text-white shadow-xl font-bold text-center;
+  }
+
+  .magical-button {
+    background: var(--potion-gradient);
+    @apply px-6 py-3 rounded-lg text-white font-semibold shadow-lg transition-all duration-300;
+  }
+
+  .magical-button:hover {
+    @apply scale-105 shadow-xl;
+    box-shadow: var(--mystical-glow);
+  }
+
+  .grimoire-header {
+    background: var(--wellness-gradient);
+    @apply text-white px-8 py-6 rounded-t-xl;
+  }
+
+  .elixir-glow {
+    filter: drop-shadow(0 0 8px hsl(var(--magical-purple) / 0.4));
   }
 }
