@@ -12,7 +12,8 @@ import { useAuth } from "../contexts/AuthContext";
 const Register = () => {
   const { login } = useAuth();
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -58,18 +59,36 @@ const Register = () => {
         <Card className="p-8 shadow-2xl border-2 border-magical-purple/20">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <Label htmlFor="name" className="flex items-center gap-2">
+              <Label htmlFor="firstName" className="flex items-center gap-2">
                 <User className="h-4 w-4" />
-                Full Name
+                First Name
               </Label>
               <Input
-                id="name"
+                id="firstName"
                 type="text"
-                value={formData.name}
+                value={formData.firstName}
                 onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
+                  setFormData({ ...formData, firstName: e.target.value })
                 }
-                placeholder="Your alchemist name"
+                placeholder="Your first name"
+                className="mt-2"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="lastName" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Last Name
+              </Label>
+              <Input
+                id="LastName"
+                type="text"
+                value={formData.lastName}
+                onChange={(e) =>
+                  setFormData({ ...formData, lastName: e.target.value })
+                }
+                placeholder="Your last name"
                 className="mt-2"
                 required
               />
