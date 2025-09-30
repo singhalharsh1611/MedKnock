@@ -1,0 +1,77 @@
+import React from 'react';
+import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { useTheme } from '../contexts/ThemeContext';
+import { Sun, Moon, LogOut, Sparkles, BookOpen, BarChart3 } from 'lucide-react';
+
+export const Layout = () => {
+  const { theme, toggleTheme } = useTheme();
+  const location = useLocation();
+
+  const navItems = [
+    { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },
+    { path: '/grimoire', label: 'My Grimoire', icon: BookOpen },
+  ];
+
+  const isActive = (path) => location.pathname === path;
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="grimoire-header shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <Sparkles className="h-8 w-8 text-white elixir-glow" />
+              <h1 className="text-2xl font-bold text-white">MedKnock</h1>
+              <span className="text-white/80 text-sm">Alchemist's Grimoire</span>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleTheme}
+                className="text-white hover:bg-white/20"
+              >
+                {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20"
+              >
+                <LogOut className="h-5 w-5" />
+                Logout
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation */}
+      <nav className="bg-card border-b border-border">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-8">
+            {navItems.map(({ path, label, icon: Icon }) => (
+              <Link key={path} to={path}>
+                <Button
+                  variant={isActive(path) ? "default" : "ghost"}
+                  className="h-12 px-6 flex items-center gap-2"
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </Button>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Outlet />
+      </main>
+    </div>
+  );
+};
