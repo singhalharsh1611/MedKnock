@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { X, Send, Bot, User } from 'lucide-react';
+import { X, Send, Bot, User, Mic } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
@@ -24,6 +24,8 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef(null);
+  const [isListening, setIsListening] = useState(false); //for speech to text
+  const speechInputRef = useRef(false); //refrence to track if speech is used
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -50,7 +52,7 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
 
     try {
       const response = await axios.post(`${backendUrl}/api/v1/chatbot`,
-        { question: inputValue },
+        { question: inputValue, history: messages },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -82,6 +84,41 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
     }
   };
 
+  //for auto submit when speech stops
+  useEffect(() => {
+    if (!isListening && speechInputRef.current) {
+      handleSendMessage();
+      speechInputRef.current = false; 
+    }
+  }, [isListening]);
+
+   const handleListen = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.onstart = () => {
+      speechInputRef.current=true;
+      setIsListening(true);
+    }
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error:", event.error);
+      speechInputRef.current=false;
+    }
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map(result => result[0])
+        .map(result => result.transcript)
+        .join('');
+      setInputValue(transcript);
+    };
+    recognition.start();
+  };
+
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleSendMessage();
@@ -91,7 +128,7 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <Card className="fixed bottom-4 right-4 w-96 h-96 flex flex-col shadow-2xl border-2 border-magical-purple/30 bg-card/95 backdrop-blur-sm">
+    <Card className="fixed bottom-4 right-4 w-[90vw] max-w-md h-[80vh] flex flex-col shadow-2xl border-2 border-magical-purple/30 bg-card/95 backdrop-blur-sm sm:w-96 sm:h-96">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-magical-purple/20 to-magical-blue/20 rounded-t-lg">
         <div className="flex items-center gap-2">
@@ -120,8 +157,8 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
 
               <div
                 className={`max-w-[75%] p-3 rounded-lg ${message.sender === 'user'
-                    ? 'bg-magical-purple text-white ml-auto'
-                    : 'bg-muted text-foreground'
+                  ? 'bg-magical-purple text-white ml-auto'
+                  : 'bg-muted text-foreground'
                   }`}
               >
                 <div className="text-sm prose dark:prose-invert">
@@ -154,9 +191,12 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Ask me anything about your wellness..."
+            placeholder={isListening ? "Listening..." : "Ask me about your wellness..."}
             className="flex-1"
           />
+          <Button onClick={handleListen} size="icon" variant="outline" disabled={isLoading || isListening}>
+            <Mic className={`h-4 w-4 ${isListening ? 'text-red-500 animate-pulse' : ''}`} />
+          </Button>
           <Button onClick={handleSendMessage} size="sm" className="magical-button">
             <Send className="h-4 w-4" />
           </Button>

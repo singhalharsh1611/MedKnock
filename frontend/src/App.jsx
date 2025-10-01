@@ -36,26 +36,24 @@ function App() {
       </Routes>
       {/* Floating Chatbot Button */}
       {
-        token && (
-          <>
-            <Button
-              onClick={() => setIsChatbotOpen(!isChatbotOpen)}
-              className="fixed bottom-4 left-4 w-14 h-14 rounded-full magical-button shadow-2xl z-50"
-              style={{ boxShadow: "var(--mystical-glow)" }}
-            >
-              <MessageCircle className="h-6 w-6" />
-            </Button>
+        token && !isChatbotOpen && (
+          <Button
+            onClick={() => setIsChatbotOpen(!isChatbotOpen)}
+            className="fixed bottom-4 left-4 w-14 h-14 rounded-full magical-button shadow-2xl z-50"
+            style={{ boxShadow: "var(--mystical-glow)" }}
+          >
+            <MessageCircle className="h-6 w-6" />
+          </Button>
+        )}
 
-            {/* Chatbot Window */}
-            <ChatbotWindow
-              isOpen={isChatbotOpen}
-              onClose={() => setIsChatbotOpen(false)}
-            />
+      {/* Chatbot Window */}
 
-          </>
-        )
-      }
-
+      {token && (
+        <ChatbotWindow
+          isOpen={isChatbotOpen}
+          onClose={() => setIsChatbotOpen(false)}
+        />
+      )}
     </>
   );
 }
