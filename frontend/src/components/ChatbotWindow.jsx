@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Send, Bot, User } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import axios from 'axios';
+import ReactMarkdown from 'react-markdown';
+
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
 export const ChatbotWindow = ({ isOpen, onClose }) => {
+  const { token } = useAuth();
   const [messages, setMessages] = useState([
     {
       id: '1',
@@ -16,8 +22,19 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
     },
   ]);
   const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const scrollAreaRef = useRef(null);
 
-  const handleSendMessage = () => {
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      const scrollableView = scrollAreaRef.current.querySelector('div');
+      if (scrollableView) {
+        scrollableView.scrollTop = scrollableView.scrollHeight;
+      }
+    }
+  }, [messages]);
+
+  const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
     const userMessage = {
@@ -29,18 +46,40 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
 
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
+    setIsLoading(true);
 
-    // Simulate bot response
-    setTimeout(() => {
+    try {
+      const response = await axios.post(`${backendUrl}/api/v1/chatbot`,
+        { question: inputValue },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
       const botMessage = {
         id: (Date.now() + 1).toString(),
-        content:
-          "Thank you for your question! I'm here to help with medication reminders, side effects, and wellness tips. This is a demo response.",
+        content: response.data.answer,
         sender: 'bot',
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, botMessage]);
-    }, 1000);
+    }
+    catch (error) {
+      console.error("Error fetching bot response:", error);
+      const errorMessage = {
+        id: (Date.now() + 1).toString(),
+        content: "My apologies, the connection to the arcane realm has failed. Please try again.",
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    }
+    finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -70,9 +109,8 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex gap-3 ${
-                message.sender === 'user' ? 'justify-end' : 'justify-start'
-              }`}
+              className={`flex gap-3 ${message.sender === 'user' ? 'justify-end' : 'justify-start'
+                }`}
             >
               {message.sender === 'bot' && (
                 <div className="w-8 h-8 rounded-full bg-magical-purple/20 flex items-center justify-center flex-shrink-0">
@@ -81,13 +119,16 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
               )}
 
               <div
-                className={`max-w-[75%] p-3 rounded-lg ${
-                  message.sender === 'user'
+                className={`max-w-[75%] p-3 rounded-lg ${message.sender === 'user'
                     ? 'bg-magical-purple text-white ml-auto'
                     : 'bg-muted text-foreground'
-                }`}
+                  }`}
               >
-                <p className="text-sm">{message.content}</p>
+                <div className="text-sm prose dark:prose-invert">
+                  <ReactMarkdown>
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
                 <p className="text-xs opacity-70 mt-1">
                   {message.timestamp.toLocaleTimeString([], {
                     hour: '2-digit',

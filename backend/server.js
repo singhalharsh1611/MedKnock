@@ -41,6 +41,8 @@ import userRouter from "./routes/userRouter.js"
 import dotenv from "dotenv";
 import scheduleRouter from "./routes/scheduleRouter.js"
 import doseLogRouter from "./routes/doseLogRouter.js"
+import chatbotRouter from "./routes/chatbotRouter.js"
+
 dotenv.config();
 const app = express();
 
@@ -64,7 +66,6 @@ app.get('/', (req, res) => {
 
 app.use('/api/v1/user', userRouter);
 app.use('/api/v1/schedules', scheduleRouter);
-app.use("/api/v1/doselogs", doseLogRouter);
 
 
 app.listen(PORT, () => {
