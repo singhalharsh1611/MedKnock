@@ -1,9 +1,4 @@
-// import { Toaster } from "@/components/ui/toaster";
-// import { Toaster as Sonner } from "@/components/ui/sonner";
-// import { TooltipProvider } from "@/components/ui/tooltip";
-// import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-// import { ThemeProvider } from "./contexts/ThemeContext";
 import { Layout } from "./components/Layout";
 import { ChatbotWindow } from "./components/ChatbotWindow";
 import { Button } from "./components/ui/button";
@@ -15,10 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Grimoire from "./pages/Grimoire";
 import ShareableReport from "./pages/ShareableReport";
 import NotFound from "./pages/NotFound";
-// import { Layout } from "./components/Layout";
-// import { ChatbotWindow } from "./components/ChatbotWindow";
-// import { Button } from "./components/ui/button";
-// import { MessageCircle } from "lucide-react";
+import Profile from "./pages/Profile";
 
 function App() {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
@@ -35,9 +27,10 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="grimoire" element={<Grimoire />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
         <Route path="*" element={<NotFound />} />
-       
+
       </Routes>
       {/* Floating Chatbot Button */}
       <Button
