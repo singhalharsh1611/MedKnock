@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, Droplets, Edit, Trash2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+
 export const PotionCard = ({
   id,
   pillName,
@@ -29,7 +30,8 @@ export const PotionCard = ({
   };
 
   return (
-    <Card className="potion-card group">
+
+      <Card className="potion-card group">
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
@@ -89,5 +91,7 @@ export const PotionCard = ({
         </div>
       </div>
     </Card>
+
+    
   );
 };
