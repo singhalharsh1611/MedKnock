@@ -6,8 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import axios from 'axios';
+import { useAuth } from '@/contexts/AuthContext';
 
-export const ScheduleFormModal = ({ isOpen, onClose, editingId }) => {
+
+
+export const ScheduleFormModal = ({ isOpen, onClose, editingId,onSuccess }) => {
+
   const [formData, setFormData] = useState({
     pillName: '',
     dosage: '',
@@ -16,6 +21,8 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId }) => {
   });
   const [times, setTimes] = useState(['']);
   const { toast } = useToast();
+  const { token } = useAuth();
+
 
   const handleAddTime = () => {
     setTimes([...times, '']);
@@ -31,7 +38,7 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId }) => {
     setTimes(newTimes);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.pillName || !formData.dosage || times.some((t) => !t)) {
@@ -40,14 +47,63 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId }) => {
         description: 'Please fill in all required fields.',
         variant: 'destructive',
       });
+
       return;
     }
 
+    try {
+       // JWT stored in localStorage
+      const payload = {
+        pillName: formData.pillName,
+        dosage: formData.dosage,
+        times,
+        quantity: formData.quantity ? Number(formData.quantity) : undefined,
+        startDate: formData.prescriptionDate || undefined,
+      };
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      toast({
+        title: editingId ? 'Elixir Updated! ✨' : 'New Elixir Added! ✨',
+        description: `${response.data.pillName} has been ${editingId ? 'updated' : 'added to'} your grimoire.`,
+      });
+
+      if (onSuccess) onSuccess();
+      // Reset form
+      setFormData({
+        pillName: '',
+        dosage: '',
+        quantity: '',
+        prescriptionDate: '',
+      });
+      setTimes(['']);
+      onClose();
+
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: 'Error',
+        description: err.response?.data?.message || 'Failed to create schedule',
+        variant: 'destructive',
+      });
+    }
+
+    
     toast({
       title: editingId ? 'Elixir Updated! ✨' : 'New Elixir Added! ✨',
       description: `${formData.pillName} has been ${editingId ? 'updated' : 'added to'} your grimoire.`,
     });
-
+    
+    if (onSuccess) onSuccess();
     // Reset form
     setFormData({
       pillName: '',
@@ -58,6 +114,7 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId }) => {
     setTimes(['']);
     onClose();
   };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
