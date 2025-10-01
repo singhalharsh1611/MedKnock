@@ -1,61 +1,62 @@
-// import { useState } from 'react'
-// import './App.css'
-// import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-// import Login from './pages/Login'
-// import Register from './pages/Register'
-// import Dashboard from './pages/Dashboard'
-// import Grimoire from './pages/Grimoire'
-// import ShareableReport from './pages/ShareableReport'
-// import { Layout } from './components/Layout'
-
-// function App() {
-  
-//   return (
-//     <BrowserRouter>
-//       <Routes>
-//         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-//               <Route path="/login" element={<Login />} />
-//               <Route path="/register" element={<Register />} />
-//               <Route path="/report/:id" element={<ShareableReport />} />
-//               <Route path="/" element={<Layout />}>
-//                 <Route path="dashboard" element={<Dashboard />} />
-//                 <Route path="grimoire" element={<Grimoire />} />
-//               </Route>
-//       </Routes>
-//     </BrowserRouter>
-//   )
-// }
-
-// export default App
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Layout } from "./components/Layout";
+import { ChatbotWindow } from "./components/ChatbotWindow";
+import { Button } from "./components/ui/button";
+import { MessageCircle } from "lucide-react";
+import { useState } from "react";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Grimoire from "./pages/Grimoire";
 import ShareableReport from "./pages/ShareableReport";
-import { Layout } from "./components/Layout";
+import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile";
+import { useAuth } from "./contexts/AuthContext";
 
 function App() {
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+  const { token } = useAuth();
   return (
-    <BrowserRouter>
+    <>
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/report/:id" element={<ShareableReport />} />
 
-        {/* App layout with default dashboard */}
+        {/* protected-App layout with default dashboard */}
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="grimoire" element={<Grimoire />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
-
-        {/* Optional 404 
         <Route path="*" element={<NotFound />} />
-        */}
+
       </Routes>
-    </BrowserRouter>
+      {/* Floating Chatbot Button */}
+      {
+        token && (
+          <>
+            <Button
+              onClick={() => setIsChatbotOpen(!isChatbotOpen)}
+              className="fixed bottom-4 left-4 w-14 h-14 rounded-full magical-button shadow-2xl z-50"
+              style={{ boxShadow: "var(--mystical-glow)" }}
+            >
+              <MessageCircle className="h-6 w-6" />
+            </Button>
+
+            {/* Chatbot Window */}
+            <ChatbotWindow
+              isOpen={isChatbotOpen}
+              onClose={() => setIsChatbotOpen(false)}
+            />
+
+          </>
+        )
+      }
+
+    </>
   );
 }
 

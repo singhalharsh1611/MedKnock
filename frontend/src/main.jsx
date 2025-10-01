@@ -5,14 +5,17 @@ import App from './App.jsx'
 import { AuthProvider } from './contexts/AuthContext.jsx'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { Toaster } from 'sonner'
+import { BrowserRouter } from 'react-router-dom'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ThemeProvider>
-      <AuthProvider>
-        <App />
-        <Toaster position="top-right" richColors />
-      </AuthProvider>
-    </ThemeProvider>
+    <BrowserRouter>
+      <ThemeProvider>
+        <AuthProvider>
+          <App />
+          <Toaster position="top-right" richColors />
+        </AuthProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   </StrictMode>,
 )

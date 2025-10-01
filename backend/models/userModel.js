@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema({
     minlength: 8
   },
 
-  // ✅ Profile Info
+  //Profile Info
   firstName: {
     type: String,
     required: true,
@@ -45,7 +45,7 @@ const userSchema = new mongoose.Schema({
     country: { type: String }
   },
 
-  // ✅ Health-related
+  //Health-related
   bloodGroup: {
     type: String,
     enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
@@ -63,12 +63,12 @@ const userSchema = new mongoose.Schema({
     phone: { type: String }
   },
 
-  // ✅ Push Notifications
+  //Push Notifications
   pushSubscription: {
     type: Object
   },
 
-  // ✅ App-related
+  //App-related
   role: {
     type: String,
     enum: ["user", "admin", "doctor"],

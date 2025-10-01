@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,16 +11,19 @@ import { useAuth } from "../contexts/AuthContext";
 import DarkVeil from "@/components/ui/DarkVeil";
 
 const Register = () => {
-  const { login } = useAuth();
+  const { register, token } = useAuth();
+  if (token) return <Navigate to='/dashboard' />
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
@@ -30,15 +33,23 @@ const Register = () => {
 
     setIsLoading(true);
 
-    // Simulate registration/login
-    setTimeout(() => {
-      const newUser = { name: formData.name, email: formData.email };
-      login(newUser); // store user in context
-
-      toast.success("Welcome, new Alchemist! ✨");
+    try {
+      // Call register function from AuthContext
+      await register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+      });
+      
+    } catch (err) {
+      console.error(err);
+    } finally {
       setIsLoading(false);
-      window.location.href = "/dashboard";
-    }, 1500);
+    }
+
+
+
   };
 
   const handleGoogleRegister = () => {
@@ -66,45 +77,45 @@ const Register = () => {
 
           <Card className="p-8 shadow-2xl border-2 border-magical-purple/20">
             <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <Label
-                    htmlFor="firstName"
-                    className="flex items-center gap-2"
-                  >
-                    <User className="h-4 w-4" />
-                    First Name
-                  </Label>
-                  <Input
-                    id="firstName"
-                    type="text"
-                    value={formData.firstName || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, firstName: e.target.value })
-                    }
-                    placeholder="First name"
-                    className="mt-2"
-                    required
-                  />
-                </div>
+              <div>
+                <Label
+                  htmlFor="firstName"
+                  className="flex items-center gap-2"
+                >
+                  <User className="h-4 w-4" />
+                  First Name
+                </Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  value={formData.firstName || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, firstName: e.target.value })
+                  }
+                  placeholder="First name"
+                  className="mt-2"
+                  required
+                />
+              </div>
 
-                <div>
-                  <Label htmlFor="lastName" className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Last Name
-                  </Label>
-                  <Input
-                    id="lastName"
-                    type="text"
-                    value={formData.lastName || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, lastName: e.target.value })
-                    }
-                    placeholder="Last name"
-                    className="mt-2"
-                    required
-                  />
-                </div>
-              
+              <div>
+                <Label htmlFor="lastName" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Last Name
+                </Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  value={formData.lastName || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lastName: e.target.value })
+                  }
+                  placeholder="Last name"
+                  className="mt-2"
+                  required
+                />
+              </div>
+
 
               <div>
                 <Label htmlFor="email" className="flex items-center gap-2">
@@ -183,6 +194,7 @@ const Register = () => {
                 variant="outline"
                 className="w-full flex items-center gap-2"
                 onClick={handleGoogleRegister}
+                disabled={isLoading}
               >
                 <Chrome className="h-4 w-4" />
                 Sign up with Google

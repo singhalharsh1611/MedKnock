@@ -1,38 +1,46 @@
-import React from 'react';
-import { PotionCard } from '../components/PotionCard';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Flame, TrendingUp, Calendar } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import React from "react";
+import { PotionCard } from "../components/PotionCard";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Flame, TrendingUp, Calendar } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+} from "recharts";
+
 
 const Dashboard = () => {
   // Mock data
   const todaysElixirs = [
     {
-      id: '1',
-      pillName: 'Healing Potion',
-      dosage: '500mg',
-      times: ['8:00 AM', '2:00 PM'],
+      id: "1",
+      pillName: "Healing Potion",
+      dosage: "500mg",
+      times: ["8:00 AM", "2:00 PM"],
       quantity: 28,
     },
     {
-      id: '2',
-      pillName: 'Strength Elixir',
-      dosage: '250mg',
-      times: ['9:00 AM'],
+      id: "2",
+      pillName: "Strength Elixir",
+      dosage: "250mg",
+      times: ["9:00 AM"],
       quantity: 5,
       isRefillDue: true,
     },
   ];
 
   const adherenceData = [
-    { day: 'Mon', rate: 95 },
-    { day: 'Tue', rate: 100 },
-    { day: 'Wed', rate: 85 },
-    { day: 'Thu', rate: 100 },
-    { day: 'Fri', rate: 90 },
-    { day: 'Sat', rate: 100 },
-    { day: 'Sun', rate: 95 },
+    { day: "Mon", rate: 95 },
+    { day: "Tue", rate: 100 },
+    { day: "Wed", rate: 85 },
+    { day: "Thu", rate: 100 },
+    { day: "Fri", rate: 90 },
+    { day: "Sat", rate: 100 },
+    { day: "Sun", rate: 95 },
   ];
 
   const currentStreak = 14;
@@ -88,20 +96,25 @@ const Dashboard = () => {
       {/* Today's Elixirs */}
       <section>
         <div className="flex items-center gap-3 mb-6">
-          <h2 className="text-2xl font-semibold text-foreground">Today's Elixirs</h2>
-          <Badge variant="outline" className="text-magical-purple border-magical-purple">
+          <h2 className="text-2xl font-semibold text-foreground">
+            Today's Elixirs
+          </h2>
+          <Badge
+            variant="outline"
+            className="text-magical-purple border-magical-purple"
+          >
             {todaysElixirs.length} due today
           </Badge>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {todaysElixirs.map((elixir) => (
             <PotionCard
               key={elixir.id}
               {...elixir}
-              onLogTaken={(id) => console.log('Logged:', id)}
-              onEdit={(id) => console.log('Edit:', id)}
-              onDelete={(id) => console.log('Delete:', id)}
+              onLogTaken={(id) => console.log("Logged:", id)}
+              onEdit={(id) => console.log("Edit:", id)}
+              onDelete={(id) => console.log("Delete:", id)}
             />
           ))}
         </div>
@@ -109,20 +122,25 @@ const Dashboard = () => {
 
       {/* Wellness Rate Chart */}
       <section>
-        <h2 className="text-2xl font-semibold text-foreground mb-6">Wellness Rate</h2>
+        <h2 className="text-2xl font-semibold text-foreground mb-6">
+          Wellness Rate
+        </h2>
         <Card className="wellness-chart">
           <h3 className="text-xl font-semibold mb-4">7-Day Adherence</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={adherenceData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.1)"
+              />
               <XAxis dataKey="day" stroke="white" />
               <YAxis stroke="white" />
-              <Line 
-                type="monotone" 
-                dataKey="rate" 
-                stroke="white" 
+              <Line
+                type="monotone"
+                dataKey="rate"
+                stroke="white"
                 strokeWidth={3}
-                dot={{ fill: 'white', strokeWidth: 2, r: 6 }}
+                dot={{ fill: "white", strokeWidth: 2, r: 6 }}
               />
             </LineChart>
           </ResponsiveContainer>

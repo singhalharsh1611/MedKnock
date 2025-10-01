@@ -53,7 +53,7 @@ export const register = async (req, res) => {
 };
 
 
-// PATCH /api/users/:id
+
 export const updateUserProfile = async (req, res) => {
     try {
         const updatedUser = await User.findByIdAndUpdate(
@@ -118,7 +118,7 @@ export const login = async (req, res) => {
 }
 
 
-// ✅ Get All Users
+
 export const allUser = async (req, res) => {
     try {
         const users = await User.find();
@@ -129,6 +129,14 @@ export const allUser = async (req, res) => {
 }
 
 
-
-
-
+export const getUserById = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+        res.status(200).json(user);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
