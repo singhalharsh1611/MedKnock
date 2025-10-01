@@ -41,7 +41,7 @@ const Register = () => {
         email: formData.email,
         password: formData.password,
       });
-      // Navigation happens inside register()
+      
     } catch (err) {
       console.error(err);
     } finally {

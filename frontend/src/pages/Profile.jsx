@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -6,235 +6,338 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
-// Removed imports for react-international-phone
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
 export default function ProfilePage() {
-    const [formData, setFormData] = useState({
-        firstName: "",
-        lastName: "",
-        age: "",
-        gender: "",
-        phone: "",
-        street: "",
-        city: "",
-        state: "",
-        zip: "",
-        country: "",
-        bloodGroup: "",
-        allergies: "",
-        medicalConditions: "",
-        emergencyName: "",
-        emergencyPhone: ""
-    });
+  const { user, token } = useAuth();
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    age: "",
+    gender: "",
+    phone: "",
+    street: "",
+    city: "",
+    state: "",
+    zip: "",
+    country: "",
+    bloodGroup: "",
+    allergies: "",
+    medicalConditions: "",
+    emergencyName: "",
+    emergencyPhone: ""
+  });
+  const [isEditing, setIsEditing] = useState(false); // Edit mode
+  const [isFirstTime, setIsFirstTime] = useState(false); // First-time profile completion
 
-    const handleChange = (field, value) => {
-        setFormData({ ...formData, [field]: value });
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const { data } = await axios.get(`${backendUrl}/api/v1/user/${user.userId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const userData = data.data || data;
+
+        const initialData = {
+          firstName: userData.firstName || "",
+          lastName: userData.lastName || "",
+          age: userData.age || "",
+          gender: userData.gender || "",
+          phone: userData.phone || "",
+          street: userData.address?.street || "",
+          city: userData.address?.city || "",
+          state: userData.address?.state || "",
+          zip: userData.address?.zip || "",
+          country: userData.address?.country || "",
+          bloodGroup: userData.bloodGroup || "",
+          allergies: userData.allergies?.join(", ") || "",
+          medicalConditions: userData.medicalConditions?.join(", ") || "",
+          emergencyName: userData.emergencyContact?.name || "",
+          emergencyPhone: userData.emergencyContact?.phone || ""
+        };
+
+        setFormData(initialData);
+
+        // Detect first-time (incomplete profile)
+        if (!userData.age || !userData.gender || !userData.phone) {
+          setIsFirstTime(true);
+          setIsEditing(true);
+        } else {
+          setIsFirstTime(false);
+          setIsEditing(false);
+        }
+      } catch (err) {
+        console.error("Error fetching user: ", err);
+        toast.error("Failed to fetch user data");
+      }
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        toast.success("Profile saved (not connected to backend yet)");
-    };
+    if (user && token) fetchUser();
+  }, [user, token]);
 
-    return (
-        <div className="max-w-3xl mx-auto p-6 space-y-8">
-            <h1 className="text-3xl font-bold">Profile Settings</h1>
-            <p className="text-muted-foreground">Update your personal and health information here.</p>
+  const handleChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+  };
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Personal Info */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Personal Information</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <Label>First Name</Label>
-                            <Input
-                                value={formData.firstName}
-                                onChange={(e) => handleChange("firstName", e.target.value)}
-                                placeholder="John"
-                            />
-                        </div>
-                        <div>
-                            <Label>Last Name</Label>
-                            <Input
-                                value={formData.lastName}
-                                onChange={(e) => handleChange("lastName", e.target.value)}
-                                placeholder="Doe"
-                            />
-                        </div>
-                        <div>
-                            <Label>Age</Label>
-                            <Input
-                                type="number"
-                                value={formData.age}
-                                onChange={(e) => handleChange("age", e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <Label>Gender</Label>
-                            <Select
-                                value={formData.gender}
-                                onValueChange={(val) => handleChange("gender", val)}
-                                required
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select gender" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Male">Male</SelectItem>
-                                    <SelectItem value="Female">Female</SelectItem>
-                                    <SelectItem value="Other">Other</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="sm:col-span-1">
-                            <Label>Phone</Label>
-                            {/* Replaced PhoneInput with standard Input */}
-                            <Input
-                                type="tel"
-                                placeholder="Enter phone number"
-                                value={formData.phone}
-                                onChange={(e) => handleChange("phone", e.target.value)}
-                                required
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        age: formData.age,
+        gender: formData.gender,
+        phone: formData.phone,
+        address: {
+          street: formData.street,
+          city: formData.city,
+          state: formData.state,
+          zip: formData.zip,
+          country: formData.country
+        },
+        bloodGroup: formData.bloodGroup,
+        allergies: formData.allergies.split(",").map(a => a.trim()),
+        medicalConditions: formData.medicalConditions.split(",").map(a => a.trim()),
+        emergencyContact: {
+          name: formData.emergencyName,
+          phone: formData.emergencyPhone
+        }
+      };
 
-                {/* Address Card */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Address</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <Label>Street</Label>
-                            <Input
-                                value={formData.street}
-                                onChange={(e) => handleChange("street", e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <Label>City</Label>
-                            <Input
-                                value={formData.city}
-                                onChange={(e) => handleChange("city", e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <Label>State</Label>
-                            <Input
-                                value={formData.state}
-                                onChange={(e) => handleChange("state", e.targe.value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <Label>Zip</Label>
-                            <Input
-                                value={formData.zip}
-                                onChange={(e) => handleChange("zip", e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="sm:col-span-1">
-                            <Label>Country</Label>
-                            <Input
-                                value={formData.country}
-                                onChange={(e) => handleChange("country", e.target.value)}
-                                required
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
+      await axios.patch(`${backendUrl}/api/v1/user/${user.userId}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-                {/* Health Info Card */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Health Information</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <Label>Blood Group</Label>
-                            <Select
-                                value={formData.bloodGroup}
-                                onValueChange={(val) => handleChange("bloodGroup", val)}
-                                required
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select blood group" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => (
-                                        <SelectItem key={bg} value={bg}>{bg}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div>
-                            <Label>Allergies</Label>
-                            <Input
-                                placeholder="e.g. peanuts, penicillin"
-                                value={formData.allergies}
-                                onChange={(e) => handleChange("allergies", e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <Label>Medical Conditions</Label>
-                            <Input
-                                placeholder="e.g. diabetes, hypertension"
-                                value={formData.medicalConditions}
-                                onChange={(e) => handleChange("medicalConditions", e.target.value)}
-                                required
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
+      toast.success("Profile updated successfully!");
+      setIsEditing(false);
+      setIsFirstTime(false);
+    } catch (err) {
+      toast.error("Failed to update profile");
+    }
+  };
 
-                {/* Emergency Contact */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Emergency Contact</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <Label>Name</Label>
-                            <Input
-                                value={formData.emergencyName}
-                                onChange={(e) => handleChange("emergencyName", e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <Label>Phone</Label>
-                            {/* Replaced PhoneInput with standard Input */}
-                            <Input
-                                type="tel"
-                                placeholder="Enter phone number"
-                                value={formData.emergencyPhone}
-                                onChange={(e) => handleChange("emergencyPhone", e.target.value)}
-                                required
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
+  return (
+    <div className="max-w-3xl mx-auto p-6 space-y-8">
+      <h1 className="text-3xl font-bold">Profile Settings</h1>
+      <p className="text-muted-foreground">Manage your personal and health information here.</p>
 
-                <Separator />
+      {/* View Mode */}
+      {!isEditing && !isFirstTime ? (
+        <Card className="p-6 space-y-4">
+          <h2 className="text-xl font-semibold">Your Profile</h2>
+          <p><strong>Name:</strong> {formData.firstName} {formData.lastName}</p>
+          <p><strong>Age:</strong> {formData.age}</p>
+          <p><strong>Gender:</strong> {formData.gender}</p>
+          <p><strong>Phone:</strong> {formData.phone}</p>
+          <p><strong>Address:</strong> {formData.street}, {formData.city}, {formData.state}, {formData.zip}, {formData.country}</p>
+          <p><strong>Blood Group:</strong> {formData.bloodGroup}</p>
+          <p><strong>Allergies:</strong> {formData.allergies}</p>
+          <p><strong>Medical Conditions:</strong> {formData.medicalConditions}</p>
+          <p><strong>Emergency Contact:</strong> {formData.emergencyName} ({formData.emergencyPhone})</p>
 
-                <div className="flex justify-end gap-4">
-                    <Button type="button" variant="outline">
-                        Cancel
-                    </Button>
-                    <Button type="submit">Save Changes</Button>
-                </div>
-            </form>
-        </div>
-    );
+          <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
+        </Card>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Personal Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Personal Information</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label>First Name</Label>
+                <Input
+                  value={formData.firstName}
+                  onChange={(e) => handleChange("firstName", e.target.value)}
+                  placeholder="John"
+                  required
+                />
+              </div>
+              <div>
+                <Label>Last Name</Label>
+                <Input
+                  value={formData.lastName}
+                  onChange={(e) => handleChange("lastName", e.target.value)}
+                  placeholder="Doe"
+                  required
+                />
+              </div>
+              <div>
+                <Label>Age</Label>
+                <Input
+                  type="number"
+                  value={formData.age}
+                  onChange={(e) => handleChange("age", e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Gender</Label>
+                <Select
+                  value={formData.gender}
+                  onValueChange={(val) => handleChange("gender", val)}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="sm:col-span-1">
+                <Label>Phone</Label>
+                <Input
+                  type="tel"
+                  placeholder="Enter phone number"
+                  value={formData.phone}
+                  onChange={(e) => handleChange("phone", e.target.value)}
+                  required
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Address Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Address</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label>Street</Label>
+                <Input
+                  value={formData.street}
+                  onChange={(e) => handleChange("street", e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label>City</Label>
+                <Input
+                  value={formData.city}
+                  onChange={(e) => handleChange("city", e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label>State</Label>
+                <Input
+                  value={formData.state}
+                  onChange={(e) => handleChange("state", e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Zip</Label>
+                <Input
+                  value={formData.zip}
+                  onChange={(e) => handleChange("zip", e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Country</Label>
+                <Input
+                  value={formData.country}
+                  onChange={(e) => handleChange("country", e.target.value)}
+                  required
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Health Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Health Information</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label>Blood Group</Label>
+                <Select
+                  value={formData.bloodGroup}
+                  onValueChange={(val) => handleChange("bloodGroup", val)}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select blood group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(bg => (
+                      <SelectItem key={bg} value={bg}>{bg}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Allergies</Label>
+                <Input
+                  placeholder="e.g. peanuts, penicillin"
+                  value={formData.allergies}
+                  onChange={(e) => handleChange("allergies", e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Medical Conditions</Label>
+                <Input
+                  placeholder="e.g. diabetes, hypertension"
+                  value={formData.medicalConditions}
+                  onChange={(e) => handleChange("medicalConditions", e.target.value)}
+                  required
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Emergency Contact */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Emergency Contact</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label>Name</Label>
+                <Input
+                  value={formData.emergencyName}
+                  onChange={(e) => handleChange("emergencyName", e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Phone</Label>
+                <Input
+                  type="tel"
+                  placeholder="Enter phone number"
+                  value={formData.emergencyPhone}
+                  onChange={(e) => handleChange("emergencyPhone", e.target.value)}
+                  required
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Separator />
+
+          <div className="flex justify-end gap-4">
+            {!isFirstTime && (
+              <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
+                Cancel
+              </Button>
+            )}
+            <Button type="submit">{isFirstTime ? "Complete Profile" : "Save Changes"}</Button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
 }

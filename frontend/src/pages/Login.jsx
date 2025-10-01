@@ -100,6 +100,7 @@ const Login = () => {
                 type="button"
                 variant="outline"
                 className="w-full flex items-center gap-2"
+                disabled={isLoading}
               >
                 <Chrome className="h-4 w-4" />
                 Continue with Google

@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
             if (response.data.success) {
                 toast.success("Welcome! Registration Successfull. ✨");
                 setAuthState(response.data.data.token);
-                navigate("/dashboard");
+                navigate("/profile");
             }
         }
 
@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setToken(null);
         toast.success("Logout Successful");
-        window.location.href = '/login';
+        navigate('/login');
     }
 
     //to check token on initial app load for fetching previos session
