@@ -1,4 +1,3 @@
-
 import express from "express";
 import { allUser, getUserById, login, register, updateUserProfile } from "../controller/userController.js";
 
