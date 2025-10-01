@@ -1,5 +1,4 @@
-import mongoose from "mongoose";
-
+import mongoose from 'mongoose';
 const scheduleSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
