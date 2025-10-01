@@ -7,6 +7,6 @@ const router = express.Router();
 router.use(authMiddleware); // all routes need JWT
 
 // user logs dose as taken
-router.post("/:scheduleId/taken", logDoseAsTaken);
+router.post("/:scheduleId", logDoseAsTaken);
 
 export default router;
