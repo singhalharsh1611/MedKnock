@@ -3,7 +3,7 @@ import cors from "cors";
 import connectDB from "./config/db.js";
 import userRouter from "./routes/userRouter.js"
 import dotenv from "dotenv";
-
+import scheduleRouter from "./routes/scheduleRouter.js"
 
 dotenv.config();
 const app = express();
@@ -27,6 +27,8 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/v1/user', userRouter);
+app.use('/api/v1/schedules', scheduleRouter);
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
