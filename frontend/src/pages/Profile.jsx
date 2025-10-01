@@ -89,6 +89,8 @@ export default function ProfilePage() {
     e.preventDefault();
     try {
       const payload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         age: formData.age,
         gender: formData.gender,
         phone: formData.phone,
@@ -107,18 +109,27 @@ export default function ProfilePage() {
           phone: formData.emergencyPhone
         }
       };
+      
+      const response = await axios.patch(
+        `${backendUrl}/api/v1/user/${user.userId}`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-      await axios.patch(`${backendUrl}/api/v1/user/${user.userId}`, payload, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      console.log("Server response:", response.data);
 
       toast.success("Profile updated successfully!");
       setIsEditing(false);
       setIsFirstTime(false);
+
+      setFormData(prev => ({ ...prev, ...payload }));
+
     } catch (err) {
+      console.error("Update error:", err.response || err);
       toast.error("Failed to update profile");
     }
   };
+
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-8">

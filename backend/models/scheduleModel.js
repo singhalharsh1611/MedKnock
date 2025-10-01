@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 
 const scheduleSchema = new mongoose.Schema({
   userId: {
@@ -28,4 +29,4 @@ const scheduleSchema = new mongoose.Schema({
 
 const Schedule = mongoose.model('Schedule', scheduleSchema);
 
-export default Schedule;
+export default Schedule;
