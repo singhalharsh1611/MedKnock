@@ -5,24 +5,28 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
 import DarkVeil from "@/components/ui/DarkVeil";
 
 const Login = () => {
-  const { login } = useAuth();
+  const { login, token } = useAuth();
+  if (token) return <Navigate to='/dashboard' />
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      const fakeUser = { email: formData.email, name: "Alchemist" };
-      login(fakeUser);
+    try {
+      await login(formData.email, formData.password);
+    }
+    catch (err) {
+      console.log("Login failed: ", err);
+    }
+    finally {
       setIsLoading(false);
-      window.location.href = "/dashboard";
-    }, 1500);
+    }
   };
 
   return (

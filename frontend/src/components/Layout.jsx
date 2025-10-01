@@ -1,14 +1,18 @@
 import React from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '../contexts/ThemeContext';
 import { Sun, Moon, LogOut, Sparkles, BookOpen, BarChart3 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const Layout = () => {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
+  const {logout, token} = useAuth();
+
+  if(!token) return <Navigate to='/login' replace/>
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -42,6 +46,7 @@ export const Layout = () => {
                 variant="ghost"
                 size="sm"
                 className="text-white hover:bg-white/20"
+                onClick={logout}
               >
                 <LogOut className="h-5 w-5" />
                 Logout

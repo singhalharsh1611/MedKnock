@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { PhoneInput } from "react-international-phone";
-import "react-international-phone/style.css";
+
+// Removed imports for react-international-phone
 
 export default function ProfilePage() {
     const [formData, setFormData] = useState({
@@ -93,27 +93,19 @@ export default function ProfilePage() {
                         </div>
                         <div className="sm:col-span-1">
                             <Label>Phone</Label>
-                            <PhoneInput
-                                defaultCountry="in"
+                            {/* Replaced PhoneInput with standard Input */}
+                            <Input
+                                type="tel"
+                                placeholder="Enter phone number"
                                 value={formData.phone}
-                                onChange={(val) => handleChange("phone", val)}
+                                onChange={(e) => handleChange("phone", e.target.value)}
                                 required
-                                className="w-full"
-                                inputClassName="w-full px-3 py-2 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                style={{
-                                    '--react-international-phone-background-color': 'transparent',
-                                    '--react-international-phone-border-color': 'hsl(var(--border))',
-                                    '--react-international-phone-border-radius': '0.375rem',
-                                    '--react-international-phone-height': '2.5rem',
-                                    '--react-international-phone-text-color': 'hsl(var(--foreground))',
-                                    '--react-international-phone-focus-border-color': 'hsl(var(--ring))',
-                                }}
                             />
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Address */}
+                {/* Address Card */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Address</CardTitle>
@@ -139,7 +131,7 @@ export default function ProfilePage() {
                             <Label>State</Label>
                             <Input
                                 value={formData.state}
-                                onChange={(e) => handleChange("state", e.target.value)}
+                                onChange={(e) => handleChange("state", e.targe.value)}
                                 required
                             />
                         </div>
@@ -151,7 +143,7 @@ export default function ProfilePage() {
                                 required
                             />
                         </div>
-                        <div className="sm:col-span-2">
+                        <div className="sm:col-span-1">
                             <Label>Country</Label>
                             <Input
                                 value={formData.country}
@@ -162,7 +154,7 @@ export default function ProfilePage() {
                     </CardContent>
                 </Card>
 
-                {/* Health Info */}
+                {/* Health Info Card */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Health Information</CardTitle>
@@ -222,21 +214,13 @@ export default function ProfilePage() {
                         </div>
                         <div>
                             <Label>Phone</Label>
-                            <PhoneInput
-                                defaultCountry="in"
+                            {/* Replaced PhoneInput with standard Input */}
+                            <Input
+                                type="tel"
+                                placeholder="Enter phone number"
                                 value={formData.emergencyPhone}
-                                onChange={(val) => handleChange("emergencyPhone", val)}
+                                onChange={(e) => handleChange("emergencyPhone", e.target.value)}
                                 required
-                                className="w-full"
-                                inputClassName="w-full px-3 py-2 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                style={{
-                                    '--react-international-phone-background-color': 'transparent',
-                                    '--react-international-phone-border-color': 'hsl(var(--border))',
-                                    '--react-international-phone-border-radius': '0.375rem',
-                                    '--react-international-phone-height': '2.5rem',
-                                    '--react-international-phone-text-color': 'hsl(var(--foreground))',
-                                    '--react-international-phone-focus-border-color': 'hsl(var(--ring))',
-                                }}
                             />
                         </div>
                     </CardContent>

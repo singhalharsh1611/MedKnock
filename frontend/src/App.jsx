@@ -11,18 +11,20 @@ import Grimoire from "./pages/Grimoire";
 import ShareableReport from "./pages/ShareableReport";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
+import { useAuth } from "./contexts/AuthContext";
 
 function App() {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+  const { token } = useAuth();
   return (
-    <BrowserRouter>
+    <>
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/report/:id" element={<ShareableReport />} />
 
-        {/* App layout with default dashboard */}
+        {/* protected-App layout with default dashboard */}
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
@@ -33,20 +35,28 @@ function App() {
 
       </Routes>
       {/* Floating Chatbot Button */}
-      <Button
-        onClick={() => setIsChatbotOpen(!isChatbotOpen)}
-        className="fixed bottom-4 left-4 w-14 h-14 rounded-full magical-button shadow-2xl z-50"
-        style={{ boxShadow: "var(--mystical-glow)" }}
-      >
-        <MessageCircle className="h-6 w-6" />
-      </Button>
+      {
+        token && (
+          <>
+            <Button
+              onClick={() => setIsChatbotOpen(!isChatbotOpen)}
+              className="fixed bottom-4 left-4 w-14 h-14 rounded-full magical-button shadow-2xl z-50"
+              style={{ boxShadow: "var(--mystical-glow)" }}
+            >
+              <MessageCircle className="h-6 w-6" />
+            </Button>
 
-      {/* Chatbot Window */}
-      <ChatbotWindow
-        isOpen={isChatbotOpen}
-        onClose={() => setIsChatbotOpen(false)}
-      />
-    </BrowserRouter>
+            {/* Chatbot Window */}
+            <ChatbotWindow
+              isOpen={isChatbotOpen}
+              onClose={() => setIsChatbotOpen(false)}
+            />
+
+          </>
+        )
+      }
+
+    </>
   );
 }
 
