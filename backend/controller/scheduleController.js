@@ -10,36 +10,46 @@ const normalizeTimes = (times) => {
 };
 
 // create new schedule
+
+
+
 export const createSchedule = async (req, res, next) => {
   try {
     console.log('req.user at createSchedule:', req.user);
     const userId = req.user?.id; // set by auth middleware
-    const { pillName, dosage, times, riskScore } = req.body;
+    const { pillName, dosage, times, riskScore, quantity, startDate } = req.body;
 
+    // Authentication check
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
+    // Validation
     if (!pillName || !pillName.trim()) {
       return res.status(400).json({ message: 'pillName is required' });
     }
 
     const timesArr = normalizeTimes(times);
-    if (timesArr.length === 0) {
+    if (!timesArr || timesArr.length === 0) {
       return res.status(400).json({ message: 'times must be a non-empty array of strings like "07:30"' });
     }
 
+    // Create schedule
     const schedule = await Schedule.create({
       userId,
       pillName: pillName.trim(),
       dosage: dosage?.trim() ?? '',
       times: timesArr,
-      riskScore: typeof riskScore === 'number' ? riskScore : undefined
+      riskScore: typeof riskScore === 'number' ? riskScore : 0, // default 0
+      quantity: typeof quantity === 'number' ? quantity : 0,       // default 0
+      startDate: startDate ? new Date(startDate) : undefined      // uses default in schema if undefined
     });
 
     return res.status(201).json(schedule);
+
   } catch (err) {
     return next(err);
   }
 };
+
 
 // GET /api/schedules
 export const getSchedules = async (req, res, next) => {

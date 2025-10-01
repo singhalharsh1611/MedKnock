@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PotionCard } from '../components/PotionCard';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -6,36 +6,45 @@ import { Plus, Share, BookOpen, Sparkles } from 'lucide-react';
 import { ScheduleFormModal } from '../components/ScheduleFormModal';
 import { useToast } from '@/hooks/use-toast';
 
+import axios from 'axios';
+import { useAuth } from '@/contexts/AuthContext';
+
+
+
+
 const Grimoire = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingElixir, setEditingElixir] = useState(null);
   const { toast } = useToast();
+  const { token } = useAuth();
+  const [elixirs, setElixirs] = useState([]);
 
   // Mock data
-  const elixirs = [
-    {
-      id: '1',
-      pillName: 'Healing Potion',
-      dosage: '500mg',
-      times: ['8:00 AM', '2:00 PM'],
-      quantity: 28,
-    },
-    {
-      id: '2',
-      pillName: 'Strength Elixir',
-      dosage: '250mg',
-      times: ['9:00 AM'],
-      quantity: 5,
-      isRefillDue: true,
-    },
-    {
-      id: '3',
-      pillName: 'Wisdom Brew',
-      dosage: '100mg',
-      times: ['7:00 AM', '12:00 PM', '7:00 PM'],
-      quantity: 42,
-    },
-  ];
+  // const elixirs = [
+  //   {
+  //     id: '1',
+  //     pillName: 'Healing Potion',
+  //     dosage: '500mg',
+  //     times: ['8:00 AM', '2:00 PM'],
+  //     quantity: 28,
+  //   },
+  //   {
+  //     id: '2',
+  //     pillName: 'Strength Elixir',
+  //     dosage: '250mg',
+  //     times: ['9:00 AM'],
+  //     quantity: 5,
+  //     isRefillDue: true,
+  //   },
+  //   {
+  //     id: '3',
+  //     pillName: 'Wisdom Brew',
+  //     dosage: '100mg',
+  //     times: ['7:00 AM', '12:00 PM', '7:00 PM'],
+  //     quantity: 42,
+  //   },
+  // ];
+
 
   const handleAddElixir = () => {
     setEditingElixir(null);
@@ -63,6 +72,29 @@ const Grimoire = () => {
       description: "Share this link to show your wellness progress.",
     });
   };
+
+
+    const fetchElixirs = async () => {
+      if (!token) return;
+
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setElixirs(response.data.items); // assuming backend returns { items, total }
+      } catch (err) {
+        console.error('Failed to fetch elixirs:', err);
+      }
+    };
+  useEffect(() => {
+    fetchElixirs();
+  }, [token]);
+
 
   return (
     <div className="space-y-8">
@@ -157,6 +189,7 @@ const Grimoire = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         editingId={editingElixir}
+        onSuccess={() => fetchElixirs()} 
       />
     </div>
   );

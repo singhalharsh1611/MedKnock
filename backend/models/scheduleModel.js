@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+
 const scheduleSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -21,6 +22,15 @@ const scheduleSchema = new mongoose.Schema({
   riskScore: {
     type: Number,
     default: 0
+  },
+  startDate: {
+    type: Date,
+    default: Date.now, // sets current date/time by default
+    required: true
+  },
+  quantity: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true
@@ -28,4 +38,4 @@ const scheduleSchema = new mongoose.Schema({
 
 const Schedule = mongoose.model('Schedule', scheduleSchema);
 
-export default Schedule;
+export default Schedule;

@@ -11,4 +11,11 @@ router.get('/', getSchedules);         // GET  /api/schedules
 router.put('/:id', updateScheduleById);// PUT  /api/schedules/:id
 router.delete('/:id', deleteScheduleById); // DELETE /api/schedules/:id
 
+// same auth is use in separate use
+// router.post('/', authentication, createSchedule);
+// router.get('/', authentication, getSchedules);
+// router.put('/:id', authentication, updateScheduleById);
+// router.delete('/:id', authentication, deleteScheduleById);
+
+
 export default router;   
