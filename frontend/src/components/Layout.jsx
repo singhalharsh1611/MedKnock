@@ -10,9 +10,9 @@ export const Layout = () => {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const {logout, token} = useAuth();
+  const {logout, token, user} = useAuth();
 
-  if(!token) return <Navigate to='/login' replace/>
+  if (!token) return <Navigate to='/login' replace />
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -56,8 +56,7 @@ export const Layout = () => {
                 className="cursor-pointer h-10 w-10 rounded-full overflow-hidden"
                 onClick={() => navigate('/profile')}
               >
-                <AvatarImage src="https://github.com/shadcn.png" />
-                <AvatarFallback>CN</AvatarFallback>
+                <AvatarImage src={user?.userPhoto || "https://cdn.jsdelivr.net/gh/shadcn/ui/public/avatar.png"} className="h-full w-full object-cover"/>
               </Avatar>
 
 

@@ -21,9 +21,6 @@ app.use(express.json());
 
 connectDB();
 
-
-
-
 app.get('/', (req, res) => {
   res.send('Welcome to the Alchemist\'s Grand Grimoire API! 🧪');
 });

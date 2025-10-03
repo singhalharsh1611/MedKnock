@@ -134,3 +134,22 @@ export const deleteScheduleById = async (req, res, next) => {
     return next(err);
   }
 };
+
+// patch /api/schedule/:id/toogle
+
+export const toggleScheduleActive = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const schedule = await Schedule.findById(id);
+
+    if (!schedule) return res.status(404).json({ message: 'Schedule not found' });
+
+    // Toggle isActive
+    schedule.isActive = !schedule.isActive;
+    await schedule.save();
+
+    return res.status(200).json(schedule);
+  } catch (err) {
+    next(err);
+  }
+};

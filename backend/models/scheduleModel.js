@@ -23,14 +23,18 @@ const scheduleSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  startDate: {
-    type: Date,
-    default: Date.now, // sets current date/time by default
-    required: true
-  },
   quantity: {
     type: Number,
     default: 0
+  },
+  startDate: {
+    type: Date,
+    default: Date.now,
+    required: true
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true

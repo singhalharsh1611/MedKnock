@@ -15,13 +15,25 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    const fetchUserAndPhoto = async (userId, token) => {
+        try {
+            const res = await axios.get(`${backendUrl}/api/v1/user/${userId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setUser({ userId: res.data._id, userPhoto: res.data.photo });
+        } catch (err) {
+            console.error("Failed to fetch user photo:", err);
+            logout();
+        }
+    };
+
 
     const setAuthState = (newToken) => {
         localStorage.setItem("token", newToken);
         setToken(newToken);
         try {
             const decodedUser = jwtDecode(newToken);
-            setUser({ userId: decodedUser.userId });
+            fetchUserAndPhoto(decodedUser.userId, newToken);
         }
         catch (err) {
             console.log("Invalid token: ", err);
@@ -78,7 +90,7 @@ export const AuthProvider = ({ children }) => {
                 if (isExpired) {
                     logout();
                 } else {
-                    setUser({ userId: decodedUser.userId });
+                    fetchUserAndPhoto(decodedUser.userId, token);
                 }
             } catch (error) {
                 logout();
@@ -88,7 +100,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, token, login, register, loading, logout }}>
+        <AuthContext.Provider value={{ user, setUser, token, login, register, loading, logout }}>
             {children}
         </AuthContext.Provider>
     );
