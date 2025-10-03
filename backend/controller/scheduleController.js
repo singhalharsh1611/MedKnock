@@ -83,30 +83,54 @@ export const updateScheduleById = async (req, res, next) => {
   try {
     const userId = req.user?.id;
     const { id } = req.params;
-    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid schedule id' });
     }
 
     const schedule = await Schedule.findOne({ _id: id, userId });
-    if (!schedule) return res.status(404).json({ message: 'Schedule not found' });
+    if (!schedule) {
+      return res.status(404).json({ message: 'Schedule not found' });
+    }
 
-    const { pillName, dosage, times, riskScore } = req.body;
+    const { pillName, dosage, times, riskScore, quantity, startDate } = req.body;
 
     if (pillName !== undefined) schedule.pillName = String(pillName).trim();
     if (dosage !== undefined) schedule.dosage = String(dosage).trim();
+
     if (times !== undefined) {
-      const arr = normalizeTimes(times);
+      // 👇 normalize or fallback to array of strings
+      const arr = Array.isArray(times) ? times.map(String) : [];
       if (arr.length === 0) {
         return res.status(400).json({ message: 'times must be a non-empty array' });
       }
       schedule.times = arr;
     }
+
     if (riskScore !== undefined) {
       if (typeof riskScore !== 'number') {
         return res.status(400).json({ message: 'riskScore must be a number' });
       }
       schedule.riskScore = riskScore;
+    }
+
+    if (quantity !== undefined) {
+      if (isNaN(quantity)) {
+        return res.status(400).json({ message: 'quantity must be a number' });
+      }
+      schedule.quantity = Number(quantity);
+    }
+
+    if (startDate !== undefined) {
+      const parsedDate = new Date(startDate);
+      if (isNaN(parsedDate.getTime())) {
+        return res.status(400).json({ message: 'startDate must be a valid date' });
+      }
+      schedule.startDate = parsedDate;
     }
 
     await schedule.save();
@@ -116,12 +140,14 @@ export const updateScheduleById = async (req, res, next) => {
   }
 };
 
+
 // DELETE /api/schedules/:id
 export const deleteScheduleById = async (req, res, next) => {
   try {
     const userId = req.user?.id;
     const { id } = req.params;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid schedule id' });
     }
@@ -134,6 +160,33 @@ export const deleteScheduleById = async (req, res, next) => {
     return next(err);
   }
 };
+
+// GET /api/v1/schedules/:id
+export const getScheduleById = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid schedule id' });
+    }
+
+  
+    const schedule = await Schedule.findOne({ _id: id, userId });
+    if (!schedule) {
+      return res.status(404).json({ message: 'Schedule not found' });
+    }
+
+    return res.status(200).json(schedule);
+  } catch (err) {
+    return next(err);
+  }
+};
+
 
 // patch /api/schedule/:id/toogle
 

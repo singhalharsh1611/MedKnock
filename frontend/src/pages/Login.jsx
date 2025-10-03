@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Link, Navigate } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
 import DarkVeil from "@/components/ui/DarkVeil";
+import { toast } from "sonner";
 
 const Login = () => {
   const { login, token } = useAuth();
@@ -22,7 +23,9 @@ const Login = () => {
       await login(formData.email, formData.password);
     }
     catch (err) {
+   
       console.log("Login failed: ", err);
+      // toast.error(`Login failed: ${err.message}`);
     }
     finally {
       setIsLoading(false);

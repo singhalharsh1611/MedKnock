@@ -59,12 +59,31 @@ const Grimoire = () => {
     setIsModalOpen(true);
   };
 
-  const handleDeleteElixir = (id) => {
-    toast({
-      title: "Elixir Removed",
-      description: "The elixir has been removed from your grimoire.",
-      variant: "destructive",
-    });
+  const handleDeleteElixir = async (id) => {
+    try {
+      const response = await axios.delete(
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      toast({
+        title: "Elixir Removed",
+        description: "The elixir has been removed from your grimoire.",
+        variant: "destructive",
+      });
+    setElixirs((prev) => prev.filter((elixir) => elixir._id !== id));
+    } catch (error) {
+      console.error("Delete failed:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove the elixir. Please try again.",
+        variant: "destructive",
+      });
+    }
+
   };
 
   const handleShareReport = () => {
@@ -103,7 +122,7 @@ const Grimoire = () => {
 
     elixirs.forEach((elixir) => {
       if (!elixir.times) return;
-      if(!elixir.isActive) return;
+      if (!elixir.isActive) return;
 
       elixir.times.forEach((time) => {
         const [hour, minute] = time.split(':').map(Number);
@@ -308,8 +327,8 @@ const Grimoire = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {elixirs.map((elixir) => (
               <PotionCardActive
-                key={elixir._id}  
-                id={elixir._id}         
+                key={elixir._id}
+                id={elixir._id}
                 pillName={elixir.pillName}
                 dosage={elixir.dosage}
                 times={elixir.times}
