@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import DoseLog from "../models/doseLogModel.js";
 import Schedule from "../models/scheduleModel.js";
+import User from "../models/userModel.js";
 
 // log dose as taken
 export const logDoseAsTaken = async (req, res, next) => {
@@ -37,6 +38,29 @@ export const logDoseAsTaken = async (req, res, next) => {
       return res.status(400).json({ message: "Dose already marked as taken for this time" });
     }
 
+    const user = await User.findById(userId);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const lastDate = user.lastStreakDate ? new Date(user.lastStreakDate) : null;
+    if (lastDate) {
+      lastDate.setHours(0, 0, 0, 0);
+    }
+
+    if (!lastDate || lastDate.getTime() < today.getTime()) {
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+
+      if (lastDate && lastDate.getTime() === yesterday.getTime()) {
+        user.currentStreak += 1; // continue streak
+      } else {
+        user.currentStreak = 1; // reset streak
+      }
+      
+      user.lastStreakDate = new Date();
+      await user.save();
+    }
+
     const log = await DoseLog.create({
       scheduleId,
       userId,
@@ -50,7 +74,7 @@ export const logDoseAsTaken = async (req, res, next) => {
       await schedule.save();
     }
 
-    return res.status(201).json({log, quantity:schedule.quantity});
+    return res.status(201).json({log, quantity:schedule.quantity, streak: user.currentStreak});
   } catch (err) {
     return next(err);
   }

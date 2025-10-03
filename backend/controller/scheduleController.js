@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Schedule from '../models/scheduleModel.js';
 import DoseLog from '../models/doseLogModel.js';
+import User from '../models/userModel.js';
 
 // safely parse and validate time strings array
 const normalizeTimes = (times) => {
@@ -62,6 +63,9 @@ export const getSchedules = async (req, res, next) => {
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    //get user's streak
+    const user = await User.findById(userId).select('currentStreak');
 
     const schedules = await Schedule.find({ userId }).sort({ createdAt: -1 });
     
@@ -129,7 +133,7 @@ export const getSchedules = async (req, res, next) => {
       items.push({ ...schedule.toObject(), canLog });
     }
 
-    return res.status(200).json({ items, total: items.length, stats:{totalDosesToday, takenDosesToday} });
+    return res.status(200).json({ items, total: items.length, stats:{totalDosesToday, takenDosesToday}, currentStreak: user?.currentStreak || 0 });
   } catch (err) {
     return next(err);
   }

@@ -22,6 +22,7 @@ const Dashboard = () => {
   const {token} = useAuth();
   const [takenDoses, setTakenDoses] = useState(0);
   const [totalDoses, setTotalDoses] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
 
   const adherenceData = [
     { day: "Mon", rate: 95 },
@@ -33,7 +34,6 @@ const Dashboard = () => {
     { day: "Sun", rate: 95 },
   ];
 
-  const currentStreak = 14;
 
   useEffect(() => {
     const fetchSchdeules = async () => {
@@ -46,6 +46,7 @@ const Dashboard = () => {
         setTodaysElixirs(res.data.items);
         setTakenDoses(res.data.stats.takenDosesToday);
         setTotalDoses(res.data.stats.totalDosesToday);
+        setCurrentStreak(res.data.currentStreak);
       } catch (error) {
         console.log(error);
       }
@@ -70,7 +71,7 @@ const Dashboard = () => {
       )
     } catch (err) {
       console.error(err.response?.data?.message || err.message);
-      toast.error("Error loggin dose");
+      toast.error("Error logging dose");
       
     }
   }
@@ -141,6 +142,7 @@ const Dashboard = () => {
           {todaysElixirs.map((elixir) => (
             <PotionCard
               key={elixir._id}
+              id={elixir._id}
               {...elixir}
               isRefillDue={elixir.quantity < 4}
               onLogTaken={()=>handleLogToken(elixir._id)}

@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 import scheduleRouter from "./routes/scheduleRouter.js"
 import doseLogRouter from "./routes/doseLogRouter.js"
 import chatbotRouter from "./routes/chatbotRouter.js"
-import './cron/cron-job.js'
+import {startCronJobs} from './cron/cron-job.js'
 
 dotenv.config();
 const app = express();
@@ -31,6 +31,7 @@ app.use('/api/v1/schedules', scheduleRouter);
 app.use('/api/v1/doseLogs', doseLogRouter);
 app.use('/api/v1/chatbot', chatbotRouter);
 
+startCronJobs();
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

@@ -70,23 +70,6 @@ export const PotionCard = ({
         >
           {canLog && quantity > 0 ? "Log as Taken" : "Not Available"}
         </Button>
-
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onEdit && onEdit(id)}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onDelete && onDelete(id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
       </div>
     </Card>
 
