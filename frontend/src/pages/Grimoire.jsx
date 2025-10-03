@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 // import { PotionCard } from '../components/PotionCard';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Plus, Share, BookOpen, Sparkles } from 'lucide-react';
+import { Plus, Share, BookOpen, Sparkles, EyeOff, Eye } from 'lucide-react';
 import { ScheduleFormModal } from '../components/ScheduleFormModal';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,7 +20,7 @@ const Grimoire = () => {
   const { toast } = useToast();
   const { token } = useAuth();
   const [elixirs, setElixirs] = useState([]);
-
+  const [showOnlyActive, setShowOnlyActive] = useState(false);
   // Mock data
   // const elixirs = [
   //   {
@@ -74,7 +74,7 @@ const Grimoire = () => {
         description: "The elixir has been removed from your grimoire.",
         variant: "destructive",
       });
-    setElixirs((prev) => prev.filter((elixir) => elixir._id !== id));
+      setElixirs((prev) => prev.filter((elixir) => elixir._id !== id));
     } catch (error) {
       console.error("Delete failed:", error);
       toast({
@@ -162,7 +162,9 @@ const Grimoire = () => {
       });
     }
   };
-
+  const displayedElixirs = showOnlyActive
+    ? elixirs.filter((e) => e.isActive)
+    : elixirs;
 
 
   return (
@@ -312,7 +314,30 @@ const Grimoire = () => {
 
       {/* Elixirs Grid */}
       <section>
-        <h2 className="text-2xl font-semibold text-foreground mb-6">Your Elixirs</h2>
+
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold text-foreground">Your Elixirs</h2>
+
+          {/* 👇 Toggle Button */}
+          <Button
+            onClick={() => setShowOnlyActive((prev) => !prev)}
+            variant="outline"
+            className="flex items-center gap-2 w-fit px-3 py-1 text-sm"
+          >
+            {showOnlyActive ? (
+              <>
+                <EyeOff className="h-4 w-4" />
+                Show All
+              </>
+            ) : (
+              <>
+                <Eye className="h-4 w-4" />
+                Show Active
+              </>
+            )}
+          </Button>
+
+        </div>
 
         {elixirs.length === 0 ? (
           <Card className="p-12 text-center">
@@ -325,7 +350,7 @@ const Grimoire = () => {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {elixirs.map((elixir) => (
+            {elixirs.map((elixir) => ( elixir.isActive?
               <PotionCardActive
                 key={elixir._id}
                 id={elixir._id}
@@ -338,7 +363,21 @@ const Grimoire = () => {
                 onEdit={handleEditElixir}
                 onDelete={handleDeleteElixir}
                 onToggleActive={handleToggleActive}
-              />
+              />:<>
+              {!showOnlyActive? <PotionCardActive
+                key={elixir._id}
+                id={elixir._id}
+                pillName={elixir.pillName}
+                dosage={elixir.dosage}
+                times={elixir.times}
+                quantity={elixir.quantity}
+                isActive={elixir.isActive}
+                isRefillDue={elixir.isRefillDue}
+                onEdit={handleEditElixir}
+                onDelete={handleDeleteElixir}
+                onToggleActive={handleToggleActive}
+              />:<></>}
+              </>
 
             ))}
           </div>
