@@ -10,12 +10,12 @@ import { BrowserRouter } from 'react-router-dom'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <App />
-          <Toaster position="top-right" richColors />
-        </AuthProvider>
-      </ThemeProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <App />
+            <Toaster position="top-right" richColors />
+          </AuthProvider>
+        </ThemeProvider>
     </BrowserRouter>
   </StrictMode>,
 )

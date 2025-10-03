@@ -54,6 +54,7 @@ const Grimoire = () => {
   };
 
   const handleEditElixir = (id) => {
+    console.log(id);
     setEditingElixir(id);
     setIsModalOpen(true);
   };

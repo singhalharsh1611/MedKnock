@@ -12,7 +12,7 @@ export const Layout = () => {
   const navigate = useNavigate();
   const {logout, token, user} = useAuth();
 
-  if(!token) return <Navigate to='/login' replace/>
+  if (!token) return <Navigate to='/login' replace />
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },
