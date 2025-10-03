@@ -10,9 +10,9 @@ export const Layout = () => {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const {logout, token} = useAuth();
+  const { logout, token } = useAuth();
 
-  if(!token) return <Navigate to='/login' replace/>
+  if (!token) return <Navigate to='/login' replace />
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },

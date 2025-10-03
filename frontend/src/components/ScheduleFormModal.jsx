@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,37 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId,onSuccess }) => {
   const { toast } = useToast();
   const { token } = useAuth();
 
+  useEffect(() => {
+    if (!editingId || !token) return;
+
+    const fetchSchedule = async () => {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules/${editingId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const data = res.data;
+        setFormData({
+          pillName: data.pillName || '',
+          dosage: data.dosage || '',
+          quantity: data.quantity || '',
+          prescriptionDate: data.startDate ? data.startDate.split('T')[0] : '',
+        });
+        setTimes(data.times && data.times.length > 0 ? data.times : ['']);
+      } catch (err) {
+        console.error(err);
+        toast({
+          title: 'Error',
+          description: 'Failed to load schedule for editing',
+          variant: 'destructive',
+        });
+      }
+    };
+
+    fetchSchedule();
+  }, [editingId, token]);
 
   const handleAddTime = () => {
     setTimes([...times, '']);
@@ -61,17 +92,32 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId,onSuccess }) => {
         startDate: formData.prescriptionDate || undefined,
       };
 
-      const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules`,
-        payload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
+      // const response = await axios.post(
+      //   `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules`,
+      //   payload,
+      //   {
+      //     headers: {
+      //       'Content-Type': 'application/json',
+      //       Authorization: `Bearer ${token}`,
+      //     },
+      //   }
+      // );
+      let response;
+      if (editingId) {
+        // 🔄 Update
+        response = await axios.patch(
+          `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules/${editingId}`,
+          payload,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } else {
+        // ➕ Add
+        response = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules`,
+          payload,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
       toast({
         title: editingId ? 'Elixir Updated! ✨' : 'New Elixir Added! ✨',
         description: `${response.data.pillName} has been ${editingId ? 'updated' : 'added to'} your grimoire.`,
