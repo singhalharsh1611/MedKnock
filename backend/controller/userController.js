@@ -1,6 +1,7 @@
 import User from "../models/userModel.js"
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import cloudinary from "../config/cloudinaryConfig.js";
 
 
 export const register = async (req, res) => {
@@ -102,7 +103,7 @@ export const login = async (req, res) => {
             process.env.JWT_SECRET ,
             { expiresIn: "1d" }
         );
-        console.log(token);
+        // console.log(token);
         //respose
         res.status(200).json({
             success: true,
@@ -138,5 +139,34 @@ export const getUserById = async (req, res) => {
         res.status(200).json(user);
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+export const uploadProfilePhoto = async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+
+        const photoUrl = await new Promise((resolve, reject)=>{
+            const stream = cloudinary.uploader.upload_stream(
+                {folder:"MedKnock"}, 
+                (error, result) => {
+                    if(error) reject(error);
+                    else resolve(result);
+                }
+            );
+            stream.end(req.file.buffer);
+        })
+        const userId = req.user.id;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { photo: photoUrl.secure_url },
+            { new: true }
+        );
+
+        res.status(200).json({ success: true, message: 'Photo uploaded', photo: photoUrl, user: updatedUser });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Upload failed', error: err.message });
     }
 };

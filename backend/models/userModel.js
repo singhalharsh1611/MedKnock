@@ -45,6 +45,11 @@ const userSchema = new mongoose.Schema({
     country: { type: String }
   },
 
+  photo: {
+    type: String,
+    default: "https://github.com/shadcn.png" 
+  },
+
   //Health-related
   bloodGroup: {
     type: String,
