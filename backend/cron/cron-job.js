@@ -12,6 +12,7 @@ const getTimeForToday = (timeStr) => {
 // every 10 minutes check missed doses
 export const startCronJobs = () => {
   cron.schedule("*/10 * * * *", async () => {
+    console.log("Cron job executed at:", new Date());
     try {
       const now = new Date();
       const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);

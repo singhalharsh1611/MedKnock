@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import scheduleRouter from "./routes/scheduleRouter.js"
 import doseLogRouter from "./routes/doseLogRouter.js"
 import chatbotRouter from "./routes/chatbotRouter.js"
+import './cron/cron-job.js'
 
 dotenv.config();
 const app = express();

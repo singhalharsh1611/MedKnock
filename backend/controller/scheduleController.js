@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Schedule from '../models/scheduleModel.js';
+import DoseLog from '../models/doseLogModel.js';
 
 // safely parse and validate time strings array
 const normalizeTimes = (times) => {
@@ -9,9 +10,14 @@ const normalizeTimes = (times) => {
     .filter(t => t.length > 0);
 };
 
+const getTimeForToday = (timeStr) => {
+  const [hours, minutes] = timeStr.split(":").map(Number);
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
+};
+
+
 // create new schedule
-
-
 
 export const createSchedule = async (req, res, next) => {
   try {
@@ -57,22 +63,73 @@ export const getSchedules = async (req, res, next) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const { q, limit = 50, skip = 0 } = req.query;
+    const schedules = await Schedule.find({ userId }).sort({ createdAt: -1 });
+    
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
 
-    const filter = { userId };
-    if (q) {
-      filter.pillName = { $regex: String(q).trim(), $options: 'i' };
+    //counters for stats
+    let totalDosesToday = 0;
+    let takenDosesToday = 0;
+
+    const now = new Date();
+    const items = [];
+
+    for (const schedule of schedules) {
+      totalDosesToday += schedule.times.length;
+      const takenCountForSchedule = await DoseLog.countDocuments({
+        scheduleId: schedule._id,
+        userId,
+        status: "taken",
+        timestamp: { $gte: todayStart, $lte: todayEnd },
+      })
+      takenDosesToday+=takenCountForSchedule;
+
+      // Compute today’s dose times
+      const timesToday = schedule.times.map(t => getTimeForToday(t));
+
+      // Check if dose can be logged now (+-1hr)
+      let canLog = false;
+      for (const doseTime of timesToday) {
+        const windowStart = new Date(doseTime.getTime() - 60 * 60 * 1000);
+        const windowEnd = new Date(doseTime.getTime() + 60 * 60 * 1000);
+        const taken = await DoseLog.findOne({
+          scheduleId: schedule._id,
+          userId,
+          timestamp: { $gte: windowStart, $lte: windowEnd },
+          status: "taken",
+        });
+        const diff = Math.abs(doseTime.getTime() - now.getTime());
+        if (!taken && diff <= 60 * 60 * 1000 && schedule.quantity > 0) {
+          canLog = true;
+        }
+      }
+
+      // mark missed doses older than 2h
+      for (const doseTime of timesToday) {
+        if (doseTime.getTime() + 2*60*60*1000 < now.getTime()) {
+          const existing = await DoseLog.findOne({
+            scheduleId: schedule._id,
+            userId,
+            timestamp: { $gte: doseTime, $lte: new Date(doseTime.getTime() + 2*60*60*1000) }
+          });
+          if (!existing) {
+            await DoseLog.create({
+              scheduleId: schedule._id,
+              userId,
+              status: "missed",
+              timestamp: doseTime
+            });
+          }
+        }
+      }
+
+      items.push({ ...schedule.toObject(), canLog });
     }
 
-    const [items, total] = await Promise.all([
-      Schedule.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(Number(skip))
-        .limit(Math.min(Number(limit), 100)),
-      Schedule.countDocuments(filter)
-    ]);
-
-    return res.status(200).json({ items, total });
+    return res.status(200).json({ items, total: items.length, stats:{totalDosesToday, takenDosesToday} });
   } catch (err) {
     return next(err);
   }

@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Droplets, Edit, Trash2, AlertTriangle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 
 export const PotionCard = ({
@@ -13,19 +13,16 @@ export const PotionCard = ({
   times,
   quantity,
   isRefillDue = false,
+  canLog = false,
   onEdit,
   onDelete,
   onLogTaken
 }) => {
-  const { toast } = useToast();
 
   const handleLogTaken = () => {
-    if (onLogTaken) {
+    if (onLogTaken && canLog && quantity>0) {
       onLogTaken(id);
-      toast({
-        title: "Elixir Consumed! ✨",
-        description: `${pillName} has been logged as taken.`,
-      });
+      toast.success(`${pillName} has been logged as taken ✨`)
     }
   };
 
@@ -69,8 +66,9 @@ export const PotionCard = ({
         <Button
           onClick={handleLogTaken}
           className="magical-button flex-1"
+          disabled={!canLog || quantity<=0}
         >
-          Log as Taken
+          {canLog && quantity > 0 ? "Log as Taken" : "Not Available"}
         </Button>
 
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
