@@ -23,17 +23,15 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const scrollAreaRef = useRef(null);
+  const messagesEndRef = useRef(null);
   const [isListening, setIsListening] = useState(false); //for speech to text
   const speechInputRef = useRef(false); //refrence to track if speech is used
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      const scrollableView = scrollAreaRef.current.querySelector('div');
-      if (scrollableView) {
-        scrollableView.scrollTop = scrollableView.scrollHeight;
-      }
-    }
+    scrollToBottom();
   }, [messages]);
 
   const handleSendMessage = async () => {
@@ -88,11 +86,11 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (!isListening && speechInputRef.current) {
       handleSendMessage();
-      speechInputRef.current = false; 
+      speechInputRef.current = false;
     }
   }, [isListening]);
 
-   const handleListen = () => {
+  const handleListen = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("Speech recognition is not supported in this browser.");
@@ -101,13 +99,13 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
     recognition.onstart = () => {
-      speechInputRef.current=true;
+      speechInputRef.current = true;
       setIsListening(true);
     }
     recognition.onend = () => setIsListening(false);
     recognition.onerror = (event) => {
       console.error("Speech recognition error:", event.error);
-      speechInputRef.current=false;
+      speechInputRef.current = false;
     }
     recognition.onresult = (event) => {
       const transcript = Array.from(event.results)
@@ -128,7 +126,7 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <Card className="fixed bottom-4 right-4 w-[90vw] max-w-md h-[80vh] flex flex-col shadow-2xl border-2 border-magical-purple/30 bg-card/95 backdrop-blur-sm sm:w-96 sm:h-96">
+    <Card className="fixed bottom-4 right-4 w-[90vw] max-w-md h-[80vh] flex flex-col shadow-2xl border-2 border-magical-purple/30 bg-card/95 backdrop-blur-sm sm:w-96 md:h-[500px]">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-magical-purple/20 to-magical-blue/20 rounded-t-lg">
         <div className="flex items-center gap-2">
@@ -181,6 +179,7 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
               )}
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
