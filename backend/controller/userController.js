@@ -108,26 +108,28 @@ export const login = async (req, res) => {
         .json({ success: false, message: "Invalid credentials" });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET || "your_jwt_secret",
-      { expiresIn: "1d" }
-    );
-    // console.log(token);
-    //respose
-    res.status(200).json({
-      success: true,
-      message: "Login successful",
-      data: {
-        email: user.email,
-        token,
-      },
-    });
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-};
+        // Generate JWT token
+        const token = jwt.sign(
+            { userId: user._id },
+            process.env.JWT_SECRET || "your_jwt_secret",
+            { expiresIn: "1d" }
+        );
+        // console.log(token);
+        //respose
+        res.status(200).json({
+            success: true,
+            message: "Login successful",
+            data: {
+                email: user.email,
+                token
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ message: "Server error", error: err.message });
+    }
+}
+
+
 
 export const allUser = async (req, res) => {
   try {

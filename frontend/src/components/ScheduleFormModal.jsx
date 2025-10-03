@@ -25,7 +25,6 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId,onSuccess }) => {
 
   useEffect(() => {
     if (!editingId || !token) return;
-
     const fetchSchedule = async () => {
       try {
         const res = await axios.get(
@@ -35,6 +34,7 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId,onSuccess }) => {
           }
         );
         const data = res.data;
+        console.log(data);
         setFormData({
           pillName: data.pillName || '',
           dosage: data.dosage || '',
@@ -53,7 +53,7 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId,onSuccess }) => {
     };
 
     fetchSchedule();
-  }, [editingId, token]);
+  }, [editingId, token,isOpen]);
 
   const handleAddTime = () => {
     setTimes([...times, '']);
@@ -91,6 +91,7 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId,onSuccess }) => {
         quantity: formData.quantity ? Number(formData.quantity) : undefined,
         startDate: formData.prescriptionDate || undefined,
       };
+      console.log(payload);
 
       // const response = await axios.post(
       //   `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules`,
