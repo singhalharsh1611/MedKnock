@@ -13,8 +13,8 @@ import axios from "axios";
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
 export default function ProfilePage() {
-  const { user, token } = useAuth();
-  const navigate = useNavigate();
+  const { user, token, setUser } = useAuth();
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -50,6 +50,7 @@ export default function ProfilePage() {
           age: userData.age || "",
           gender: userData.gender || "",
           phone: userData.phone || "",
+          photo: userData.photo || "",
           street: userData.address?.street || "",
           city: userData.address?.city || "",
           state: userData.address?.state || "",
@@ -132,14 +133,76 @@ export default function ProfilePage() {
 
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-8">
+    <div className="max-w-6xl mx-auto p-6 space-y-8">
       <h1 className="text-3xl font-bold">Profile Settings</h1>
       <p className="text-muted-foreground">Manage your personal and health information here.</p>
 
+      <div className="flex flex-col md:flex-row gap-12">
+
+      <div className="flex flex-col items-center w-full md:w-1/3">
+        <img
+          src={
+            formData.photo ||
+            "https://cdn.jsdelivr.net/gh/shadcn/ui/public/avatar.png"
+          }
+          alt="Profile"
+          className="w-32 h-32 rounded-full object-cover border shadow-sm"
+        />
+        <Label className="mt-4">
+          <Input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            id="profilePhotoInput"
+            onChange={async (e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+              const formDataFile = new FormData();
+              formDataFile.append("file", file);
+
+              try {
+                setPhotoUploading(true);
+                const res = await axios.patch(`${backendUrl}/api/v1/user/${user.userId}/photo`,
+                  formDataFile, 
+                  {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                      "Content-Type": "multipart/form-data"
+                    }
+                  }
+                )
+                handleChange("photo", res.data.photo);
+                user.userPhoto = res.data.photo; 
+                toast.success("Profile photo updated!");
+                setUser(prev => ({ ...prev, userPhoto: res.data.photo }));
+                window.location.reload();
+              } catch (err) {
+                console.error(err);
+                toast.error("Failed to upload photo");
+              } finally {
+                setPhotoUploading(false);
+              }
+            }}
+          />
+            <Button
+              variant="secondary"
+              className="mt-2"
+              onClick={() => document.getElementById("profilePhotoInput").click()}
+              disabled={photoUploading}
+            >
+              {photoUploading ? "Uploading..." : "Change Photo"}
+            </Button>
+
+        </Label>
+      </div>
+
+      
+
       {/* View Mode */}
+      <div className="flex-1 w-full">
       {!isEditing && !isFirstTime ? (
         <Card className="p-6 space-y-4">
-          <h2 className="text-xl font-semibold">Your Profile</h2>
+          <h2 className="text-3xl text-center font-semibold">Your Profile</h2>
           <p><strong>Name:</strong> {formData.firstName} {formData.lastName}</p>
           <p><strong>Age:</strong> {formData.age}</p>
           <p><strong>Gender:</strong> {formData.gender}</p>
@@ -207,10 +270,14 @@ export default function ProfilePage() {
               <div className="sm:col-span-1">
                 <Label>Phone</Label>
                 <Input
-                  type="tel"
+                  type="tel" 
                   placeholder="Enter phone number"
+                  maxLength={10}
                   value={formData.phone}
-                  onChange={(e) => handleChange("phone", e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "");
+                    handleChange("phone", value)
+                  }}
                   required
                 />
               </div>
@@ -330,7 +397,11 @@ export default function ProfilePage() {
                   type="tel"
                   placeholder="Enter phone number"
                   value={formData.emergencyPhone}
-                  onChange={(e) => handleChange("emergencyPhone", e.target.value)}
+                  maxLength={10}
+                  onChange={(e) => {
+                    const value1 = e.target.value.replace(/\D/g, "");
+                    handleChange("emergencyPhone", value1)
+                  }}
                   required
                 />
               </div>
@@ -349,6 +420,9 @@ export default function ProfilePage() {
           </div>
         </form>
       )}
+      </div>
+      </div>
+      
     </div>
   );
 }
