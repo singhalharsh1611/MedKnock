@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }) => {
 
         }
         catch (error) {
-            toast.error(error.response?.data?.message || "Login failed, please check your credentials");
+            toast.error(error.message || "Login failed, please check your credentials");
             throw error;
         }
     }
