@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 const Login = () => {
   const { login, token } = useAuth();
-  if (token) return <Navigate to='/dashboard' />
+  if (token) return <Navigate to="/dashboard" />;
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -23,9 +23,7 @@ const Login = () => {
       await login(formData.email, formData.password);
     }
     catch (err) {
-   
       console.log("Login failed: ", err);
-      // toast.error(`Login failed: ${err.message}`);
     }
     finally {
       setIsLoading(false);
@@ -46,8 +44,12 @@ const Login = () => {
             <div className="flex justify-center mb-4">
               <Sparkles className="h-12 w-12 text-magical-purple elixir-glow" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">MedKnock</h1>
-            <p className="text-muted-foreground">Welcome back to your grimoire</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              MedKnock
+            </h1>
+            <p className="text-muted-foreground">
+              Welcome back to your grimoire
+            </p>
           </div>
 
           <Card className="p-8 shadow-2xl border-2 border-magical-purple/20">
@@ -71,10 +73,18 @@ const Login = () => {
               </div>
 
               <div>
-                <Label htmlFor="password" className="flex items-center gap-2">
-                  <Lock className="h-4 w-4" />
-                  Password
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
+                    Password
+                  </Label>
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm text-magical-purple hover:underline font-semibold"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
                 <Input
                   id="password"
                   type="password"
@@ -89,7 +99,7 @@ const Login = () => {
               </div>
 
               <Button
-                type="submit"
+                type="submit" 
                 className="magical-button w-full"
                 disabled={isLoading}
               >

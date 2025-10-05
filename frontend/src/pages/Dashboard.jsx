@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { PotionCard } from "../components/PotionCard";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,27 +11,18 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
+import axios from "axios";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
 const Dashboard = () => {
-  // Mock data
-  const todaysElixirs = [
-    {
-      id: "1",
-      pillName: "Healing Potion",
-      dosage: "500mg",
-      times: ["8:00 AM", "2:00 PM"],
-      quantity: 28,
-    },
-    {
-      id: "2",
-      pillName: "Strength Elixir",
-      dosage: "250mg",
-      times: ["9:00 AM"],
-      quantity: 5,
-      isRefillDue: true,
-    },
-  ];
+  const [todaysElixirs, setTodaysElixirs] = useState([]);
+  const {token} = useAuth();
+  const [takenDoses, setTakenDoses] = useState(0);
+  const [totalDoses, setTotalDoses] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
 
   const adherenceData = [
     { day: "Mon", rate: 95 },
@@ -43,7 +34,47 @@ const Dashboard = () => {
     { day: "Sun", rate: 95 },
   ];
 
-  const currentStreak = 14;
+
+  useEffect(() => {
+    const fetchSchdeules = async () => {
+      try {
+        const res = await axios.get(`${backendUrl}/api/v1/schedules`, {
+          headers:{
+            Authorization:`Bearer ${token}`
+          }
+        })
+        setTodaysElixirs(res.data.items);
+        setTakenDoses(res.data.stats.takenDosesToday);
+        setTotalDoses(res.data.stats.totalDosesToday);
+        setCurrentStreak(res.data.currentStreak);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+    fetchSchdeules();
+  }, [token]);
+
+
+  const handleLogToken = async(scheduleId) => {
+    try {
+      const res = await axios.post(`${backendUrl}/api/v1/doseLogs/${scheduleId}/taken`, {}, {
+        headers:{
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      setTodaysElixirs(prev =>
+        prev.map(e=>
+          e._id === scheduleId
+          ? {...e, quantity: res.data.quantity, canLog:false}:e
+        )
+      )
+    } catch (err) {
+      console.error(err.response?.data?.message || err.message);
+      toast.error("Error logging dose");
+      
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -75,7 +106,7 @@ const Dashboard = () => {
           <div className="flex items-center gap-3">
             <Calendar className="h-6 w-6 text-magical-blue" />
             <div>
-              <p className="text-2xl font-bold text-foreground">2/3</p>
+              <p className="text-2xl font-bold text-foreground">{takenDoses}/{totalDoses}</p>
               <p className="text-sm text-muted-foreground">Elixirs Today</p>
             </div>
           </div>
@@ -110,9 +141,11 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {todaysElixirs.map((elixir) => (
             <PotionCard
-              key={elixir.id}
+              key={elixir._id}
+              id={elixir._id}
               {...elixir}
-              onLogTaken={(id) => console.log("Logged:", id)}
+              isRefillDue={elixir.quantity < 4}
+              onLogTaken={()=>handleLogToken(elixir._id)}
               onEdit={(id) => console.log("Edit:", id)}
               onDelete={(id) => console.log("Delete:", id)}
             />

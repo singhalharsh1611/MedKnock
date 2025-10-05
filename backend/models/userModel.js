@@ -68,21 +68,24 @@ const userSchema = new mongoose.Schema({
     phone: { type: String }
   },
 
+  //for streaks
+  currentStreak: {
+    type: Number,
+    default: 0
+  },
+  lastStreakDate: {
+    type: Date
+  },
+
   //Push Notifications
   pushSubscription: {
     type: Object
   },
 
-  //App-related
-  role: {
-    type: String,
-    enum: ["user", "admin", "doctor"],
-    default: "user"
-  },
   isVerified: {
     type: Boolean,
     default: false
-  }
+  },
 }, {
   timestamps: true
 });
