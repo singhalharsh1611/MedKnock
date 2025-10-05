@@ -13,6 +13,7 @@ import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
 import { Layout } from '@/components/Layout';
 import { PotionCardActive } from '@/components/PotionCardActive';
+import Loader from '@/components/Loader';
 
 
 
@@ -24,6 +25,8 @@ const Grimoire = () => {
   const { token } = useAuth();
   const [elixirs, setElixirs] = useState([]);
   const [showOnlyActive, setShowOnlyActive] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   // Mock data
   // const elixirs = [
   //   {
@@ -63,6 +66,7 @@ const Grimoire = () => {
   };
 
   const handleDeleteElixir = async (id) => {
+    setLoading(true);
     try {
       const response = await axios.delete(
         `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules/${id}`,
@@ -78,7 +82,9 @@ const Grimoire = () => {
       setElixirs((prev) => prev.filter((elixir) => elixir._id !== id));
     } catch (error) {
       console.error("Delete failed:", error);
-     toast.error("server error");
+      toast.error("server error");
+    } finally {
+      setLoading(false);
     }
 
   };
@@ -95,7 +101,7 @@ const Grimoire = () => {
 
   const fetchElixirs = async () => {
     if (!token) return;
-
+    setLoading(true);
     try {
       const response = await axios.get(
         `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules`,
@@ -108,6 +114,9 @@ const Grimoire = () => {
       setElixirs(response.data.items); //  backend returns { items, total }
     } catch (err) {
       console.error('Failed to fetch elixirs:', err);
+    }
+    finally {
+      setLoading(false);
     }
   };
   useEffect(() => {
@@ -137,6 +146,13 @@ const Grimoire = () => {
   };
 
   const handleToggleActive = async (id) => {
+    setElixirs((prev) =>
+      prev.map((elixir) =>
+        elixir._id === id ? { ...elixir, isActive: !elixir.isActive } : elixir
+      )
+    );
+    setLoading(true);
+    // const newState = !isActive;
     try {
       const res = await axios.patch(
         `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules/${id}/toggle-active`,
@@ -146,51 +162,65 @@ const Grimoire = () => {
         }
       );
       console.log(res);
-      toast.success(
-        'Schedule Updated',{
-        description: `${res.data?.message}`,
-    });
-      fetchElixirs(); // refresh list
+      toast.success('Schedule Updated', { description: `${res.data?.message}`, });
+      setElixirs(res.data.schedules);
+      // fetchElixirs(); // refresh list
+
     } catch (err) {
       console.error(err);
       toast(
-        'Error',{
+        'Error', {
         description: err.message || 'Failed to update schedule',
         variant: 'destructive',
       });
+      // Rollback if API fails
+      setElixirs((prev) =>
+        prev.map((elixir) =>
+          elixir._id === id ? { ...elixir, isActive: !elixir.isActive } : elixir
+        )
+      );
+    }
+    finally {
+      setLoading(false);
     }
   };
-  const displayedElixirs = showOnlyActive
-    ? elixirs.filter((e) => e.isActive)
-    : elixirs;
+
+
+
+
+  // const displayedElixirs = showOnlyActive
+  //   ? elixirs.filter((e) => e.isActive)
+  //   : elixirs;
 
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <BookOpen className="h-8 w-8 text-magical-purple elixir-glow" />
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">My Grimoire</h1>
-            <p className="text-muted-foreground">Your collection of healing elixirs</p>
+    <>
+      {loading && <Loader />}
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <BookOpen className="h-8 w-8 text-magical-purple elixir-glow" />
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">My Grimoire</h1>
+              <p className="text-muted-foreground">Your collection of healing elixirs</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button onClick={handleShareReport} variant="outline" className="flex items-center gap-2">
+              <Share className="h-4 w-4" />
+              Share Report
+            </Button>
+            <Button onClick={handleAddElixir} className="magical-button flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add New Elixir
+            </Button>
           </div>
         </div>
 
-        <div className="flex gap-3">
-          <Button onClick={handleShareReport} variant="outline" className="flex items-center gap-2">
-            <Share className="h-4 w-4" />
-            Share Report
-          </Button>
-          <Button onClick={handleAddElixir} className="magical-button flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Add New Elixir
-          </Button>
-        </div>
-      </div>
-
-      {/* Stats */}
-      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Stats */}
+        {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="p-6 bg-gradient-to-br from-magical-purple/20 to-magical-blue/20">
           <div className="flex items-center gap-3">
             <Sparkles className="h-6 w-6 text-magical-purple" />
@@ -238,149 +268,150 @@ const Grimoire = () => {
         </Card>
 
       </div> */}
-      {/* Stats - Row 1 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 bg-gradient-to-br from-magical-purple/20 to-magical-blue/20">
-          <div className="flex items-center gap-3">
-            <Sparkles className="h-6 w-6 text-magical-purple" />
-            <div>
-              <p className="text-2xl font-bold text-foreground">{elixirs.reduce((sum, e) => sum + (e.isActive ? 1 : 0), 0)}</p>
-              <p className="text-sm text-muted-foreground">Active Elixirs</p>
+        {/* Stats - Row 1 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="p-6 bg-gradient-to-br from-magical-purple/20 to-magical-blue/20">
+            <div className="flex items-center gap-3">
+              <Sparkles className="h-6 w-6 text-magical-purple" />
+              <div>
+                <p className="text-2xl font-bold text-foreground">{elixirs.reduce((sum, e) => sum + (e.isActive ? 1 : 0), 0)}</p>
+                <p className="text-sm text-muted-foreground">Active Elixirs</p>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-magical-green/20 to-magical-teal/20">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-magical-green rounded-full"></div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">
-                {elixirs.reduce((sum, e) => sum + (e.isActive && e.times?.length || 0), 0)}
-              </p>
-              <p className="text-sm text-muted-foreground">Total Daily Doses</p>
+          <Card className="p-6 bg-gradient-to-br from-magical-green/20 to-magical-teal/20">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-magical-green rounded-full"></div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">
+                  {elixirs.reduce((sum, e) => sum + (e.isActive && e.times?.length || 0), 0)}
+                </p>
+                <p className="text-sm text-muted-foreground">Total Daily Doses</p>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
 
-        <Card className="p-6 bg-gradient-to-br from-red-400/20 to-orange-400/20">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-red-400 rounded-full"></div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">
-                {elixirs.filter(e => e.isRefillDue).length}
-              </p>
-              <p className="text-sm text-muted-foreground">Refills Due</p>
+          <Card className="p-6 bg-gradient-to-br from-red-400/20 to-orange-400/20">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-red-400 rounded-full"></div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">
+                  {elixirs.filter(e => e.isRefillDue).length}
+                </p>
+                <p className="text-sm text-muted-foreground">Refills Due</p>
+              </div>
             </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Stats - Row 2 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        <Card className="p-6 bg-gradient-to-br from-yellow-200/20 to-yellow-400/20">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-yellow-400 rounded-full"></div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{countDosesByTime(elixirs, 0, 14)}</p>
-              <p className="text-sm text-muted-foreground">Morning Doses</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 bg-gradient-to-br from-orange-200/20 to-orange-400/20">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-orange-400 rounded-full"></div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{countDosesByTime(elixirs, 14, 20)}</p>
-              <p className="text-sm text-muted-foreground">Evening Doses</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 bg-gradient-to-br from-purple-200/20 to-purple-400/20">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-purple-400 rounded-full"></div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{countDosesByTime(elixirs, 20, 24)}</p>
-              <p className="text-sm text-muted-foreground">Night Doses</p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-
-      {/* Elixirs Grid */}
-      <section>
-
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-foreground">Your Elixirs</h2>
-
-          {/* 👇 Toggle Button */}
-          <Button
-            onClick={() => setShowOnlyActive((prev) => !prev)}
-            variant="outline"
-            className="flex items-center gap-2 w-fit px-3 py-1 text-sm"
-          >
-            {showOnlyActive ? (
-              <>
-                <EyeOff className="h-4 w-4" />
-                Show All
-              </>
-            ) : (
-              <>
-                <Eye className="h-4 w-4" />
-                Show Active
-              </>
-            )}
-          </Button>
-
+          </Card>
         </div>
 
-        {elixirs.length === 0 ? (
-          <Card className="p-12 text-center">
-            <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-foreground mb-2">
-              Your grimoire is empty
-            </h3>
-            <p className="text-muted-foreground mb-6">
-              Start by adding your first elixir to begin your wellness journey
-            </p>
-            <Button onClick={handleAddElixir} className="magical-button">
-              Add Your First Elixir
-            </Button>
+        {/* Stats - Row 2 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+          <Card className="p-6 bg-gradient-to-br from-yellow-200/20 to-yellow-400/20">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-yellow-400 rounded-full"></div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{countDosesByTime(elixirs, 0, 14)}</p>
+                <p className="text-sm text-muted-foreground">Morning Doses</p>
+              </div>
+            </div>
           </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {elixirs
-              .filter((elixir) => (showOnlyActive ? elixir.isActive : true))
-              .map((elixir) => (
-                <PotionCardActive
-                  key={elixir._id}
-                  id={elixir._id}
-                  pillName={elixir.pillName}
-                  dosage={elixir.dosage}
-                  times={elixir.times}
-                  quantity={elixir.quantity}
-                  isActive={elixir.isActive}
-                  isRefillDue={elixir.isRefillDue}
-                  onEdit={handleEditElixir}
-                  onDelete={handleDeleteElixir}
-                  onToggleActive={handleToggleActive}
-                />
-              ))}
+
+          <Card className="p-6 bg-gradient-to-br from-orange-200/20 to-orange-400/20">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-orange-400 rounded-full"></div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{countDosesByTime(elixirs, 14, 20)}</p>
+                <p className="text-sm text-muted-foreground">Evening Doses</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-gradient-to-br from-purple-200/20 to-purple-400/20">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-purple-400 rounded-full"></div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{countDosesByTime(elixirs, 20, 24)}</p>
+                <p className="text-sm text-muted-foreground">Night Doses</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+
+        {/* Elixirs Grid */}
+        <section>
+
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-foreground">Your Elixirs</h2>
+
+            {/* 👇 Toggle Button */}
+            <Button
+              onClick={() => setShowOnlyActive((prev) => !prev)}
+              variant="outline"
+              className="flex items-center gap-2 w-fit px-3 py-1 text-sm"
+            >
+              {showOnlyActive ? (
+                <>
+                  <EyeOff className="h-4 w-4" />
+                  Show All
+                </>
+              ) : (
+                <>
+                  <Eye className="h-4 w-4" />
+                  Show Active
+                </>
+              )}
+            </Button>
+
           </div>
-        )}
 
-      </section >
+          {elixirs.length === 0 ? (
+            <Card className="p-12 text-center">
+              <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">
+                Your grimoire is empty
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                Start by adding your first elixir to begin your wellness journey
+              </p>
+              <Button onClick={handleAddElixir} className="magical-button">
+                Add Your First Elixir
+              </Button>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {elixirs
+                .filter((elixir) => (showOnlyActive ? elixir.isActive : true))
+                .map((elixir) => (
+                  <PotionCardActive
+                    key={elixir._id}
+                    id={elixir._id}
+                    pillName={elixir.pillName}
+                    dosage={elixir.dosage}
+                    times={elixir.times}
+                    quantity={elixir.quantity}
+                    isActive={elixir.isActive}
+                    isRefillDue={elixir.isRefillDue}
+                    onEdit={handleEditElixir}
+                    onDelete={handleDeleteElixir}
+                    onToggleActive={handleToggleActive}
+                  />
+                ))}
+            </div>
+          )}
 
-      <ScheduleFormModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        editingId={editingElixir}
-        onSuccess={() => fetchElixirs()}
-      />
-    </div >
+        </section >
+
+        <ScheduleFormModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          editingId={editingElixir}
+          onSuccess={() => fetchElixirs()}
+        />
+      </div >
+    </>
   );
 };
 
