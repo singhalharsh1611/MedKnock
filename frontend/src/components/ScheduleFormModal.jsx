@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus, Clock } from 'lucide-react';
-import {toast} from "sonner";
+import { toast } from "sonner";
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -21,6 +21,7 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId, onSuccess }) => 
   });
   const [times, setTimes] = useState(['']);
   const { token } = useAuth();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!editingId || !token) return;
@@ -35,7 +36,7 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId, onSuccess }) => 
         );
         const data = res.data;
         // console.log(data);
-      
+
         // make form emprty
         setFormData({
           pillName: data.pillName || '',
@@ -82,6 +83,7 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId, onSuccess }) => 
       return;
     }
 
+    setLoading(true);
     try {
 
       const payload = {
@@ -131,6 +133,8 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId, onSuccess }) => 
       toast.error("Error", {
         description: err.data?.message || "Failed to create schedule",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -238,9 +242,10 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId, onSuccess }) => 
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Cancel
             </Button>
-            <Button type="submit" className="magical-button flex-1">
-              {editingId ? 'Update Elixir' : 'Add Elixir'}
+            <Button type="submit" className="magical-button flex-1" disabled={loading}>
+              {loading ? "Please wait..." : editingId ? "Update Elixir" : "Add Elixir"}
             </Button>
+
           </div>
         </form>
       </DialogContent>

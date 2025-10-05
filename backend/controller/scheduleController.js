@@ -40,9 +40,9 @@ export const createSchedule = async (req, res, next) => {
     }
 
     //CHECK IF  already exist
-    const exist = await Schedule.findOne({ pillName , userId });
+    const exist = await Schedule.findOne({ pillName, userId });
     if (exist) {
-      return res.status(201).json({success:false, message: 'Schedule already exist' });
+      return res.status(201).json({ success: false, message: 'Schedule already exist' });
     }
     // Create schedule
     const schedule = await Schedule.create({
@@ -73,7 +73,7 @@ export const getSchedules = async (req, res, next) => {
     const user = await User.findById(userId).select('currentStreak');
 
     const schedules = await Schedule.find({ userId }).sort({ createdAt: -1 });
-    
+
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();
@@ -94,7 +94,7 @@ export const getSchedules = async (req, res, next) => {
         status: "taken",
         timestamp: { $gte: todayStart, $lte: todayEnd },
       })
-      takenDosesToday+=takenCountForSchedule;
+      takenDosesToday += takenCountForSchedule;
 
       // Compute today’s dose times
       const timesToday = schedule.times.map(t => getTimeForToday(t));
@@ -123,7 +123,7 @@ export const getSchedules = async (req, res, next) => {
           const existing = await DoseLog.findOne({
             scheduleId: schedule._id,
             userId,
-            timestamp: { $gte: doseTime, $lte: new Date(doseTime.getTime() + 1*60*60*1000) }
+            timestamp: { $gte: doseTime, $lte: new Date(doseTime.getTime() + 2*60*60*1000) }
           });
           if (!existing) {
             await DoseLog.create({
@@ -147,7 +147,7 @@ export const getSchedules = async (req, res, next) => {
       items.push({ ...schedule.toObject(), canLog, missedTimes });
     }
 
-    return res.status(200).json({ items, total: items.length, stats:{totalDosesToday, takenDosesToday}, currentStreak: user?.currentStreak || 0 });
+    return res.status(200).json({ items, total: items.length, stats: { totalDosesToday, takenDosesToday }, currentStreak: user?.currentStreak || 0 });
   } catch (err) {
     return next(err);
   }
@@ -250,7 +250,7 @@ export const getScheduleById = async (req, res, next) => {
       return res.status(400).json({ message: 'Invalid schedule id' });
     }
 
-  
+
     const schedule = await Schedule.findOne({ _id: id, userId });
     if (!schedule) {
       return res.status(404).json({ message: 'Schedule not found' });
@@ -276,7 +276,15 @@ export const toggleScheduleActive = async (req, res, next) => {
     schedule.isActive = !schedule.isActive;
     await schedule.save();
 
-    return res.status(200).json({success:true,message:"toggle schedule successfuly"});
+    const schedules = await Schedule.find({ userId: req.user.id }).sort({ createdAt: -1 });
+ 
+    // console.log(schedules);
+    return res.status(200).json({
+      success: true,
+      message: "Schedule toggled successfully",
+      schedules, // full updated list
+    });
+
   } catch (err) {
     next(err);
   }
