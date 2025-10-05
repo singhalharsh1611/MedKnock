@@ -5,13 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus, Clock } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import {toast} from "sonner";
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
 
 
 
-export const ScheduleFormModal = ({ isOpen, onClose, editingId,onSuccess }) => {
+export const ScheduleFormModal = ({ isOpen, onClose, editingId, onSuccess }) => {
 
   const [formData, setFormData] = useState({
     pillName: '',
@@ -20,13 +20,13 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId,onSuccess }) => {
     prescriptionDate: '',
   });
   const [times, setTimes] = useState(['']);
-  const { toast } = useToast();
   const { token } = useAuth();
 
   useEffect(() => {
     if (!editingId || !token) return;
     const fetchSchedule = async () => {
       try {
+        //fetch current schedule data
         const res = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules/${editingId}`,
           {
@@ -34,7 +34,9 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId,onSuccess }) => {
           }
         );
         const data = res.data;
-        console.log(data);
+        // console.log(data);
+      
+        // make form emprty
         setFormData({
           pillName: data.pillName || '',
           dosage: data.dosage || '',
@@ -44,16 +46,15 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId,onSuccess }) => {
         setTimes(data.times && data.times.length > 0 ? data.times : ['']);
       } catch (err) {
         console.error(err);
-        toast({
-          title: 'Error',
-          description: 'Failed to load schedule for editing',
-          variant: 'destructive',
+        // On error
+        toast.error("Error", {
+          description: err.message || "Failed to create schedule",
         });
       }
     };
 
     fetchSchedule();
-  }, [editingId, token,isOpen]);
+  }, [editingId, token, isOpen]);
 
   const handleAddTime = () => {
     setTimes([...times, '']);
@@ -73,17 +74,16 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId,onSuccess }) => {
     e.preventDefault();
 
     if (!formData.pillName || !formData.dosage || times.some((t) => !t)) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please fill in all required fields.',
-        variant: 'destructive',
+      // On missing fields
+      toast.error("Missing Information", {
+        description: "Please fill in all required fields.",
       });
 
       return;
     }
 
     try {
-       // JWT stored in localStorage
+
       const payload = {
         pillName: formData.pillName,
         dosage: formData.dosage,
@@ -91,36 +91,26 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId,onSuccess }) => {
         quantity: formData.quantity ? Number(formData.quantity) : undefined,
         startDate: formData.prescriptionDate || undefined,
       };
-      console.log(payload);
+      // console.log(payload);
 
-      // const response = await axios.post(
-      //   `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules`,
-      //   payload,
-      //   {
-      //     headers: {
-      //       'Content-Type': 'application/json',
-      //       Authorization: `Bearer ${token}`,
-      //     },
-      //   }
-      // );
       let response;
       if (editingId) {
-        // 🔄 Update
+        // Update
         response = await axios.patch(
           `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules/${editingId}`,
           payload,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
-        // ➕ Add
+        // Add
         response = await axios.post(
           `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules`,
           payload,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       }
-      toast({
-        title: editingId ? 'Elixir Updated! ✨' : 'New Elixir Added! ✨',
+      // On success
+      toast.success(editingId ? "Elixir Updated! ✨" : "New Elixir Added! ✨", {
         description: `${response.data.pillName} has been ${editingId ? 'updated' : 'added to'} your grimoire.`,
       });
 
@@ -137,29 +127,11 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId,onSuccess }) => {
 
     } catch (err) {
       console.error(err);
-      toast({
-        title: 'Error',
-        description: err.response?.data?.message || 'Failed to create schedule',
-        variant: 'destructive',
+      // On error
+      toast.error("Error", {
+        description: err.data?.message || "Failed to create schedule",
       });
     }
-
-    
-    toast({
-      title: editingId ? 'Elixir Updated! ✨' : 'New Elixir Added! ✨',
-      description: `${formData.pillName} has been ${editingId ? 'updated' : 'added to'} your grimoire.`,
-    });
-    
-    if (onSuccess) onSuccess();
-    // Reset form
-    setFormData({
-      pillName: '',
-      dosage: '',
-      quantity: '',
-      prescriptionDate: '',
-    });
-    setTimes(['']);
-    onClose();
   };
 
 

@@ -4,7 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Plus, Share, BookOpen, Sparkles, EyeOff, Eye } from 'lucide-react';
 import { ScheduleFormModal } from '../components/ScheduleFormModal';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from "sonner";
+
+
+
 
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,7 +20,7 @@ import { PotionCardActive } from '@/components/PotionCardActive';
 const Grimoire = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingElixir, setEditingElixir] = useState(null);
-  const { toast } = useToast();
+
   const { token } = useAuth();
   const [elixirs, setElixirs] = useState([]);
   const [showOnlyActive, setShowOnlyActive] = useState(false);
@@ -69,19 +72,13 @@ const Grimoire = () => {
           },
         }
       );
-      toast({
-        title: "Elixir Removed",
+      toast.success("Elixir Removed", {
         description: "The elixir has been removed from your grimoire.",
-        variant: "destructive",
-      });
+      });;
       setElixirs((prev) => prev.filter((elixir) => elixir._id !== id));
     } catch (error) {
       console.error("Delete failed:", error);
-      toast({
-        title: "Error",
-        description: "Failed to remove the elixir. Please try again.",
-        variant: "destructive",
-      });
+     toast.error("server error");
     }
 
   };
@@ -141,23 +138,24 @@ const Grimoire = () => {
 
   const handleToggleActive = async (id) => {
     try {
-      await axios.patch(
+      const res = await axios.patch(
         `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules/${id}/toggle-active`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      toast({
-        title: 'Schedule Updated',
-        description: 'Schedule status has been updated.',
-      });
+      console.log(res);
+      toast.success(
+        'Schedule Updated',{
+        description: `${res.data?.message}`,
+    });
       fetchElixirs(); // refresh list
     } catch (err) {
       console.error(err);
-      toast({
-        title: 'Error',
-        description: err.response?.data?.message || 'Failed to update schedule',
+      toast(
+        'Error',{
+        description: err.message || 'Failed to update schedule',
         variant: 'destructive',
       });
     }
@@ -342,47 +340,39 @@ const Grimoire = () => {
         {elixirs.length === 0 ? (
           <Card className="p-12 text-center">
             <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-foreground mb-2">Your grimoire is empty</h3>
-            <p className="text-muted-foreground mb-6">Start by adding your first elixir to begin your wellness journey</p>
+            <h3 className="text-xl font-semibold text-foreground mb-2">
+              Your grimoire is empty
+            </h3>
+            <p className="text-muted-foreground mb-6">
+              Start by adding your first elixir to begin your wellness journey
+            </p>
             <Button onClick={handleAddElixir} className="magical-button">
               Add Your First Elixir
             </Button>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {elixirs.map((elixir) => ( elixir.isActive?
-              <PotionCardActive
-                key={elixir._id}
-                id={elixir._id}
-                pillName={elixir.pillName}
-                dosage={elixir.dosage}
-                times={elixir.times}
-                quantity={elixir.quantity}
-                isActive={elixir.isActive}
-                isRefillDue={elixir.isRefillDue}
-                onEdit={handleEditElixir}
-                onDelete={handleDeleteElixir}
-                onToggleActive={handleToggleActive}
-              />:<>
-              {!showOnlyActive? <PotionCardActive
-                key={elixir._id}
-                id={elixir._id}
-                pillName={elixir.pillName}
-                dosage={elixir.dosage}
-                times={elixir.times}
-                quantity={elixir.quantity}
-                isActive={elixir.isActive}
-                isRefillDue={elixir.isRefillDue}
-                onEdit={handleEditElixir}
-                onDelete={handleDeleteElixir}
-                onToggleActive={handleToggleActive}
-              />:<></>}
-              </>
-
-            ))}
+            {elixirs
+              .filter((elixir) => (showOnlyActive ? elixir.isActive : true))
+              .map((elixir) => (
+                <PotionCardActive
+                  key={elixir._id}
+                  id={elixir._id}
+                  pillName={elixir.pillName}
+                  dosage={elixir.dosage}
+                  times={elixir.times}
+                  quantity={elixir.quantity}
+                  isActive={elixir.isActive}
+                  isRefillDue={elixir.isRefillDue}
+                  onEdit={handleEditElixir}
+                  onDelete={handleDeleteElixir}
+                  onToggleActive={handleToggleActive}
+                />
+              ))}
           </div>
         )}
-      </section>
+
+      </section >
 
       <ScheduleFormModal
         isOpen={isModalOpen}
@@ -390,7 +380,7 @@ const Grimoire = () => {
         editingId={editingElixir}
         onSuccess={() => fetchElixirs()}
       />
-    </div>
+    </div >
   );
 };
 

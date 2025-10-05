@@ -32,6 +32,11 @@ export const createSchedule = async (req, res, next) => {
       return res.status(400).json({ message: 'times must be a non-empty array of strings like "07:30"' });
     }
 
+    //CHECK IF  already exist
+    const exist = await Schedule.findOne({ pillName , userId });
+    if (exist) {
+      return res.status(201).json({success:false, message: 'Schedule already exist' });
+    }
     // Create schedule
     const schedule = await Schedule.create({
       userId,
@@ -201,7 +206,7 @@ export const toggleScheduleActive = async (req, res, next) => {
     schedule.isActive = !schedule.isActive;
     await schedule.save();
 
-    return res.status(200).json(schedule);
+    return res.status(200).json({success:true,message:"toggle schedule successfuly"});
   } catch (err) {
     next(err);
   }
