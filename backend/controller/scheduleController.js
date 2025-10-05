@@ -101,6 +101,7 @@ export const getSchedules = async (req, res, next) => {
 
       // Check if dose can be logged now (+-1hr)
       let canLog = false;
+      const missedTimes = [];
       for (const doseTime of timesToday) {
         const windowStart = new Date(doseTime.getTime() - 60 * 60 * 1000);
         const windowEnd = new Date(doseTime.getTime() + 60 * 60 * 1000);
@@ -116,13 +117,13 @@ export const getSchedules = async (req, res, next) => {
         }
       }
 
-      // mark missed doses older than 2h
+      // mark missed doses older than 1h
       for (const doseTime of timesToday) {
-        if (doseTime.getTime() + 2*60*60*1000 < now.getTime()) {
+        if (doseTime.getTime() + 1*60*60*1000 < now.getTime()) {
           const existing = await DoseLog.findOne({
             scheduleId: schedule._id,
             userId,
-            timestamp: { $gte: doseTime, $lte: new Date(doseTime.getTime() + 2*60*60*1000) }
+            timestamp: { $gte: doseTime, $lte: new Date(doseTime.getTime() + 1*60*60*1000) }
           });
           if (!existing) {
             await DoseLog.create({
@@ -131,11 +132,19 @@ export const getSchedules = async (req, res, next) => {
               status: "missed",
               timestamp: doseTime
             });
+            const h = doseTime.getHours().toString().padStart(2, "0");
+            const m = doseTime.getMinutes().toString().padStart(2, "0");
+            missedTimes.push(`${h}:${m}`);
+          }
+          else if(existing.status==="missed"){
+            const h = doseTime.getHours().toString().padStart(2, "0");
+            const m = doseTime.getMinutes().toString().padStart(2, "0");
+            missedTimes.push(`${h}:${m}`);
           }
         }
       }
 
-      items.push({ ...schedule.toObject(), canLog });
+      items.push({ ...schedule.toObject(), canLog, missedTimes });
     }
 
     return res.status(200).json({ items, total: items.length, stats:{totalDosesToday, takenDosesToday}, currentStreak: user?.currentStreak || 0 });

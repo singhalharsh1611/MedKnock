@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Droplets, Edit, Trash2, AlertTriangle } from 'lucide-react';
+import { Clock, Droplets, Edit, Trash2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 
@@ -16,7 +16,8 @@ export const PotionCard = ({
   canLog = false,
   onEdit,
   onDelete,
-  onLogTaken
+  onLogTaken,
+  missedTimes = [],
 }) => {
 
   const handleLogTaken = () => {
@@ -57,6 +58,17 @@ export const PotionCard = ({
           {quantity != null && (
             <p className="text-sm text-muted-foreground mb-4">
               Remaining: {quantity} doses
+            </p>
+          )}
+          {missedTimes.length > 0 ? (
+            <p className="text-sm text-red-500 font-medium flex items-center gap-1">
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+              Missed at: {missedTimes.join(", ")}
+            </p>
+          ) : (
+            <p className="text-sm text-green-500 font-medium flex items-center gap-1">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              None missed yet today
             </p>
           )}
         </div>

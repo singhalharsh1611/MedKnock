@@ -15,21 +15,21 @@ export const startCronJobs = () => {
     console.log("Cron job executed at:", new Date());
     try {
       const now = new Date();
-      const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+      const oneHoursAgo = new Date(now.getTime() - 1 * 60 * 60 * 1000);
 
       const schedules = await Schedule.find({});
       for (const schedule of schedules) {
         for (const time of schedule.times) {
           const doseTime = getTimeForToday(time);
 
-          // If dose time passed more than 2h ago but today no log exists them mark the pill as missed
-          if (doseTime <= twoHoursAgo) {
+          // If dose time passed more than 1h ago but today no log exists them mark the pill as missed
+          if (doseTime <= oneHoursAgo) {
             const existing = await DoseLog.findOne({
               scheduleId: schedule._id,
               userId: schedule.userId,
               timestamp: {
                 $gte: doseTime,
-                $lte: new Date(doseTime.getTime() + 2 * 60 * 60 * 1000)
+                $lte: new Date(doseTime.getTime() + 1 * 60 * 60 * 1000)
               }
             });
 
