@@ -38,7 +38,7 @@ export const PotionCardActive = ({
             {isRefillDue && (
               <Badge variant="destructive" className="flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3" />
-                Refill Due {key}
+                Refill Due
               </Badge>
             )}
           </div>

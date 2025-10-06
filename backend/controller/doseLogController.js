@@ -55,11 +55,18 @@ export const logDoseAsTaken = async (req, res, next) => {
       timestamp: now
     });
 
+
+    // decrease risk score for positive reinforcement
+    if(schedule.riskScore > 0){
+      schedule.riskScore = Math.max(0, schedule.riskScore - 1);
+    }
+
+    // Reduce quantity
     //  Reduce medicine quantity
     if (schedule.quantity > 0) {
       schedule.quantity -= 1;
-      await schedule.save();
     }
+    await schedule.save();
 
     //  Get today's boundaries
     const todayStart = new Date();
