@@ -14,12 +14,13 @@ import {
 import axios from "axios";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { getMessaging, getToken } from "firebase/messaging";
 
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
 const Dashboard = () => {
   const [todaysElixirs, setTodaysElixirs] = useState([]);
-  const {token} = useAuth();
+  const {token, user} = useAuth();
   const [takenDoses, setTakenDoses] = useState(0);
   const [totalDoses, setTotalDoses] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
@@ -75,6 +76,35 @@ const Dashboard = () => {
       
     }
   }
+
+
+  //for getting fcmToken
+  useEffect(()=>{
+    const requirePermission = async() => {
+      try{
+        const permission = await Notification.requestPermission();
+        if(permission==='granted'){
+          const messaging = getMessaging();
+          const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+          const fcmToken = await getToken(messaging, {vapidKey: vapidKey});
+          // console.log("vk: ",vapidKey);
+          
+
+          if(fcmToken){
+            await axios.post(`${backendUrl}/api/v1/notifications/subscribe`, {fcmToken}, { headers: { Authorization: `Bearer ${token}` }})
+          }
+
+          // console.log("fcm token: ", fcmToken);
+        }
+      }catch(error){
+        console.error('Error getting notification permission or token:', error);
+      }
+    }
+
+    if(user && token){
+      requirePermission();
+    }
+  }, [user, token]);
 
   return (
     <div className="space-y-8">
