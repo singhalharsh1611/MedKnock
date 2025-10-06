@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import Schedule from '../models/scheduleModel.js';
 import DoseLog from '../models/doseLogModel.js';
 import User from '../models/userModel.js';
-import { zonedTimeToUtc } from "date-fns-tz";
+
 
 // safely parse and validate time strings array
 const normalizeTimes = (times) => {
