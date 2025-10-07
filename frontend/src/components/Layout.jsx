@@ -2,7 +2,7 @@ import React from 'react';
 import { Outlet, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '../contexts/ThemeContext';
-import { Sun, Moon, LogOut, Sparkles, BookOpen, BarChart3 } from 'lucide-react';
+import { Sun, Moon, LogOut, Sparkles, BookOpen, BarChart3, Scale } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -17,6 +17,7 @@ export const Layout = () => {
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },
     { path: '/grimoire', label: 'My Grimoire', icon: BookOpen },
+    { path: '/compare', label: 'Compare', icon: Scale },
   ];
 
   const isActive = (path) => location.pathname === path;

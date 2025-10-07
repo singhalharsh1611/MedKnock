@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import { useAuth } from "./contexts/AuthContext";
 import ForgotPassword from "./pages/ForgetPassword";
+import Compare from "./pages/compare";
 
 function App() {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
@@ -32,6 +33,7 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="grimoire" element={<Grimoire />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="compare" element={<Compare />} />
         </Route>
         <Route path="*" element={<NotFound />} />
 
