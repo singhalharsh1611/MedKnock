@@ -191,4 +191,8 @@ export const startCronJobs = () => {
       console.error("Error in reminder cron job:", err);
     }
   });
+
+  // Cron job to notify low medicine stock every 6 hours
+
+
 };
