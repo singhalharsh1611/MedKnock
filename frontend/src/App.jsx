@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import { useAuth } from "./contexts/AuthContext";
 import ForgotPassword from "./pages/ForgetPassword";
+import Compare from "./pages/compare";
 import StatsPage from "./pages/StatsPage";
 import GoogleSuccess from "./components/GoogleSucess";
 
@@ -35,6 +36,7 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="grimoire" element={<Grimoire />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="compare" element={<Compare />} />
           <Route path="stats" element={<StatsPage />} />
         </Route>
         <Route path="*" element={<NotFound />} />
