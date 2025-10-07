@@ -186,7 +186,7 @@ const Dashboard = () => {
       </section>
 
       {/* Wellness Rate Chart */}
-      <section>
+      {/* <section>
         <h2 className="text-2xl font-semibold text-foreground mb-6">
           Wellness Rate
         </h2>
@@ -210,7 +210,7 @@ const Dashboard = () => {
             </LineChart>
           </ResponsiveContainer>
         </Card>
-      </section>
+      </section> */}
     </div>
   );
 };

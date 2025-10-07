@@ -7,6 +7,7 @@ import scheduleRouter from "./routes/scheduleRouter.js"
 import doseLogRouter from "./routes/doseLogRouter.js"
 import chatbotRouter from "./routes/chatbotRouter.js"
 import notificationRouter from "./routes/notificationRouter.js"
+import statsRouter from "./routes/statsRouter.js"
 import {startCronJobs} from './cron/cron-job.js'
 
 dotenv.config();
@@ -32,6 +33,7 @@ app.use('/api/v1/schedules', scheduleRouter);
 app.use('/api/v1/doseLogs', doseLogRouter);
 app.use('/api/v1/chatbot', chatbotRouter);
 app.use('/api/v1/notifications', notificationRouter);
+app.use('/api/v1/stats', statsRouter);
 
 startCronJobs();
 
