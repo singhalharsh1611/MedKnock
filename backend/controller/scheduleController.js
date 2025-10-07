@@ -3,6 +3,7 @@ import Schedule from '../models/scheduleModel.js';
 import DoseLog from '../models/doseLogModel.js';
 import User from '../models/userModel.js';
 
+
 // safely parse and validate time strings array
 const normalizeTimes = (times) => {
   if (!Array.isArray(times)) return [];
@@ -87,15 +88,17 @@ export const getSchedules = async (req, res, next) => {
     const items = [];
 
     for (const schedule of schedules) {
-      totalDosesToday += schedule.times.length;
-      const takenCountForSchedule = await DoseLog.countDocuments({
+      if(schedule.isActive){
+        totalDosesToday += schedule.times.length;
+      
+      const takenCountForSchedule = await DoseLog.countDocuments({// counting log that has already taken
         scheduleId: schedule._id,
         userId,
         status: "taken",
         timestamp: { $gte: todayStart, $lte: todayEnd },
       })
       takenDosesToday += takenCountForSchedule;
-
+    }
       // Compute today’s dose times
       const timesToday = schedule.times.map(t => getTimeForToday(t));
 
@@ -148,6 +151,7 @@ export const getSchedules = async (req, res, next) => {
     }
 
     return res.status(200).json({ items, total: items.length, stats: { totalDosesToday, takenDosesToday }, currentStreak: user?.currentStreak || 0 });
+  
   } catch (err) {
     return next(err);
   }

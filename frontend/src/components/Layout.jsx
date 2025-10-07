@@ -24,6 +24,9 @@ export const Layout = () => {
   const navItems = [
     { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
     { path: "/grimoire", label: "My Grimoire", icon: BookOpen },
+    { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },
+    { path: '/grimoire', label: 'My Grimoire', icon: BookOpen },
+    { path: '/stats', label: 'Stats', icon: BookOpen },
   ];
 
   const isActive = (path) => location.pathname === path;

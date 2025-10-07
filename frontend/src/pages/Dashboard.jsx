@@ -169,7 +169,9 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {todaysElixirs.map((elixir) => (
+          {todaysElixirs
+          .filter((elixir) => (elixir.isActive))
+          .map((elixir) => (
             <PotionCard
               key={elixir._id}
               id={elixir._id}
@@ -184,7 +186,7 @@ const Dashboard = () => {
       </section>
 
       {/* Wellness Rate Chart */}
-      <section>
+      {/* <section>
         <h2 className="text-2xl font-semibold text-foreground mb-6">
           Wellness Rate
         </h2>
@@ -208,7 +210,7 @@ const Dashboard = () => {
             </LineChart>
           </ResponsiveContainer>
         </Card>
-      </section>
+      </section> */}
     </div>
   );
 };

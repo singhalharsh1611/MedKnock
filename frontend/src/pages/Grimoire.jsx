@@ -346,7 +346,7 @@ const Grimoire = () => {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold text-foreground">Your Elixirs</h2>
 
-            {/* 👇 Toggle Button */}
+            {/* Toggle Button */}
             <Button
               onClick={() => setShowOnlyActive((prev) => !prev)}
               variant="outline"
@@ -393,7 +393,7 @@ const Grimoire = () => {
                     times={elixir.times}
                     quantity={elixir.quantity}
                     isActive={elixir.isActive}
-                    isRefillDue={elixir.isRefillDue}
+                    isRefillDue={elixir.quantity<4}
                     onEdit={handleEditElixir}
                     onDelete={handleDeleteElixir}
                     onToggleActive={handleToggleActive}
