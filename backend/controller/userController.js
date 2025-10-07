@@ -108,28 +108,26 @@ export const login = async (req, res) => {
         .json({ success: false, message: "Invalid credentials" });
     }
 
-        // Generate JWT token
-        const token = jwt.sign(
-            { userId: user._id },
-            process.env.JWT_SECRET || "your_jwt_secret",
-            { expiresIn: "1d" }
-        );
-        // console.log(token);
-        //respose
-        res.status(200).json({
-            success: true,
-            message: "Login successful",
-            data: {
-                email: user.email,
-                token
-            }
-        });
-    } catch (err) {
-        res.status(500).json({ message: "Server error", error: err.message });
-    }
-}
-
-
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET || "your_jwt_secret",
+      { expiresIn: "1d" }
+    );
+    // console.log(token);
+    //respose
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      data: {
+        email: user.email,
+        token,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
 
 export const allUser = async (req, res) => {
   try {
@@ -179,14 +177,12 @@ export const uploadProfilePhoto = async (req, res) => {
       { new: true }
     );
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Photo uploaded",
-        photo: photoUrl,
-        user: updatedUser,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Photo uploaded",
+      photo: photoUrl,
+      user: updatedUser,
+    });
   } catch (err) {
     console.error(err);
     res
@@ -239,8 +235,10 @@ export const sendMail = async (req, res) => {
     console.log("Email sented:", info.messageId);
     res.json({ success: true, message: "OTP sent to email" });
   } catch (error) {
-    console.error("Email error:", error);
-    res.status(500).json({ success: false, message: "Email failed", error });
+    console.error("Email sending error:", error.message);
+    res
+      .status(500)
+      .json({ success: false, message: "Email failed", error: error.message });
   }
 };
 

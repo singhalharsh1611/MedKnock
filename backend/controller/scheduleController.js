@@ -37,7 +37,7 @@ export const createSchedule = async (req, res, next) => {
 
     const timesArr = normalizeTimes(times);
     if (!timesArr || timesArr.length === 0) {
-      return res.status(400).json({ message: 'times must be a non-empty array of strings like "07:30"' });
+      return res.status(400).json({ message: 'Times must be a non-empty array of strings like "07:30"' });
     }
 
     //CHECK IF  already exist

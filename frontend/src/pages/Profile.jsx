@@ -117,7 +117,7 @@ export default function ProfilePage() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log("Server response:", response.data);
+      // console.log("Server response:", response.data);
 
       toast.success("Profile updated successfully!");
       setIsEditing(false);
@@ -146,6 +146,7 @@ export default function ProfilePage() {
             "https://cdn.jsdelivr.net/gh/shadcn/ui/public/avatar.png"
           }
           alt="Profile"
+          referrerPolicy="no-referrer"
           className="w-32 h-32 rounded-full object-cover border shadow-sm"
         />
         <Label className="mt-4">
