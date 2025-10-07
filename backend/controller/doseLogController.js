@@ -32,7 +32,6 @@ export const logDoseAsTaken = async (req, res, next) => {
     if (!currentSlot) {
       return res.status(400).json({ message: "Cannot log dose outside the allowed time frame" });
     }
-    console.log(currentSlot.getTime());
     const existing = await DoseLog.findOne({
       scheduleId,
       userId,
