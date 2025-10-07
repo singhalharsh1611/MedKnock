@@ -193,6 +193,42 @@ export const startCronJobs = () => {
   });
 
   // Cron job to notify low medicine stock every 6 hours
+cron.schedule("0 */6 * * *", async () => {
+  console.log("Low stock check cron executed at:", new Date());
+  try {
+    // 1. Find schedules where quantity is less than 4
+    const lowStockSchedules = await Schedule.find({
+      quantity: { $lt: 4 },
+      isActive: true,
+    });
 
+    if (lowStockSchedules.length === 0) {
+      console.log("No low stock medicines found.");
+      return;
+    }
+
+    console.log(`[${new Date().toLocaleTimeString()}] Found ${lowStockSchedules.length} low stock schedules.`);
+
+    // 2. Send notification to each user
+    for (const schedule of lowStockSchedules) {
+      const user = await User.findById(schedule.userId);
+
+      if (user && user.fcmToken) {
+        const title = "Medicine Stock Alert ⚠️";
+        const body = `Your medicine ${schedule.pillName} is running low (quantity: ${schedule.quantity}). Please refill soon.`;
+
+        // Send push notification
+        await sendNotification(user.fcmToken, title, body);
+
+        // Send email notification
+        await sendEmail(user.email, title, `<h3>${body}</h3>`, body);
+
+        console.log(`Low stock notification sent to ${user.email} for ${schedule.pillName}`);
+      }
+    }
+  } catch (err) {
+    console.error("Error in low stock cron job:", err);
+  }
+});
 
 };
