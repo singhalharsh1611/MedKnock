@@ -10,14 +10,16 @@ export const Layout = () => {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const {logout, token, user} = useAuth();
+  const { logout, token, user } = useAuth();
 
-  if (!token) return <Navigate to='/login' replace />
+  if (!token) return <Navigate to="/login" replace />;
+  // console.log(user);
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },
     { path: '/grimoire', label: 'My Grimoire', icon: BookOpen },
     { path: '/compare', label: 'Compare', icon: Scale },
+    { path: '/stats', label: 'Stats', icon: BookOpen },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -30,8 +32,12 @@ export const Layout = () => {
           <div className="flex items-center justify-between h-4">
             <div className="flex items-center gap-3">
               <Sparkles className="h-8 w-8 text-white elixir-glow" />
-              <h1 className="text-2xl font-bold text-white hidden sm:block">MedKnock</h1>
-              <span className="text-white/80 text-sm hidden md:inline">Alchemist's Grimoire</span>
+              <h1 className="text-2xl font-bold text-white hidden sm:block">
+                MedKnock
+              </h1>
+              <span className="text-white/80 text-sm hidden md:inline">
+                Alchemist's Grimoire
+              </span>
             </div>
 
             <div className="flex items-center gap-4">
@@ -41,7 +47,11 @@ export const Layout = () => {
                 onClick={toggleTheme}
                 className="text-white hover:bg-white/20"
               >
-                {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                {theme === "light" ? (
+                  <Moon className="h-5 w-5" />
+                ) : (
+                  <Sun className="h-5 w-5" />
+                )}
               </Button>
               <Button
                 variant="ghost"
@@ -52,15 +62,27 @@ export const Layout = () => {
                 <LogOut className="h-5 w-5" />
                 Logout
               </Button>
-
+             
               <Avatar
                 className="cursor-pointer h-10 w-10 rounded-full overflow-hidden"
-                onClick={() => navigate('/profile')}
+                onClick={() => navigate("/profile")}
               >
-                <AvatarImage src={user?.userPhoto || "https://cdn.jsdelivr.net/gh/shadcn/ui/public/avatar.png"} className="h-full w-full object-cover"/>
+                <AvatarImage
+                  src={
+                    user?.photo ||
+                    "https://cdn.jsdelivr.net/gh/shadcn/ui/public/avatar.png"
+                  }
+                  alt="User Avatar"
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full object-cover"
+                />
+                <AvatarFallback>
+                  
+                  
+                  {user?.firstName && user.firstName[0].toUpperCase()}
+                 
+                </AvatarFallback>
               </Avatar>
-
-
             </div>
           </div>
         </div>
@@ -84,8 +106,6 @@ export const Layout = () => {
           </div>
         </div>
       </nav>
-
-
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

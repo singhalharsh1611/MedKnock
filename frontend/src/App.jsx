@@ -14,6 +14,8 @@ import Profile from "./pages/Profile";
 import { useAuth } from "./contexts/AuthContext";
 import ForgotPassword from "./pages/ForgetPassword";
 import Compare from "./pages/compare";
+import StatsPage from "./pages/StatsPage";
+import GoogleSuccess from "./components/GoogleSucess";
 
 function App() {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
@@ -25,6 +27,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
          <Route path="/forgot-password" element={<ForgotPassword />}/>
+         <Route path="/google-success" element={<GoogleSuccess />} />
         <Route path="/report/:id" element={<ShareableReport />} />
 
         {/* protected-App layout with default dashboard */}
@@ -34,6 +37,7 @@ function App() {
           <Route path="grimoire" element={<Grimoire />} />
           <Route path="profile" element={<Profile />} />
           <Route path="compare" element={<Compare />} />
+          <Route path="stats" element={<StatsPage />} />
         </Route>
         <Route path="*" element={<NotFound />} />
 

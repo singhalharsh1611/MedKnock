@@ -8,19 +8,34 @@ import doseLogRouter from "./routes/doseLogRouter.js"
 import chatbotRouter from "./routes/chatbotRouter.js"
 import notificationRouter from "./routes/notificationRouter.js"
 import webScraperRouter from "./routes/webScraperRouter.js"
+import statsRouter from "./routes/statsRouter.js"
 import {startCronJobs} from './cron/cron-job.js'
+import passport from "passport";
+import passportSetup from "./config/passport.js";
+import session from "express-session";
 
 dotenv.config();
-const app = express();
 
+const app = express();
 const PORT = process.env.PORT;
+
+app.use(express.json());
+
+passportSetup();
 
 app.use(cors({
   origin: [process.env.FRONTEND_URL, process.env.BACKEND_URL],
   credentials: true
 }));
 
-app.use(express.json());
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: true
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 connectDB();
 
@@ -34,6 +49,7 @@ app.use('/api/v1/doseLogs', doseLogRouter);
 app.use('/api/v1/chatbot', chatbotRouter);
 app.use('/api/v1/notifications', notificationRouter);
 app.use("/api/v1/webScrape", webScraperRouter);
+app.use('/api/v1/stats', statsRouter);
 
 startCronJobs();
 
