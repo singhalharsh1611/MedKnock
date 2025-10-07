@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
       const res = await axios.get(`${backendUrl}/api/v1/user/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setUser({ userId: res.data._id, userPhoto: res.data.photo });
+      setUser({ ...res.data, userId: res.data._id });
     } catch (err) {
       console.error("Failed to fetch user photo:", err);
       logout();
