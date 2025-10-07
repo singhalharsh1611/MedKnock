@@ -15,6 +15,7 @@ import axios from "axios";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { getMessaging, getToken } from "firebase/messaging";
+import Loader from "@/components/Loader";
 
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -24,21 +25,13 @@ const Dashboard = () => {
   const [takenDoses, setTakenDoses] = useState(0);
   const [totalDoses, setTotalDoses] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
-
-  const adherenceData = [
-    { day: "Mon", rate: 95 },
-    { day: "Tue", rate: 100 },
-    { day: "Wed", rate: 85 },
-    { day: "Thu", rate: 100 },
-    { day: "Fri", rate: 90 },
-    { day: "Sat", rate: 100 },
-    { day: "Sun", rate: 95 },
-  ];
-
+  const [loading,setLoading] = useState(false);
 
   useEffect(() => {
+
     const fetchSchdeules = async () => {
       try {
+        setLoading(true);
         const res = await axios.get(`${backendUrl}/api/v1/schedules`, {
           headers:{
             Authorization:`Bearer ${token}`
@@ -48,8 +41,10 @@ const Dashboard = () => {
         setTakenDoses(res.data.stats.takenDosesToday);
         setTotalDoses(res.data.stats.totalDosesToday);
         setCurrentStreak(res.data.currentStreak);
+        setLoading(false);
       } catch (error) {
         console.log(error);
+        setLoading(false);
       }
     }
     fetchSchdeules();
@@ -58,6 +53,7 @@ const Dashboard = () => {
 
   const handleLogToken = async(scheduleId) => {
     try {
+      setLoading(true);
       const res = await axios.post(`${backendUrl}/api/v1/doseLogs/${scheduleId}/taken`, {}, {
         headers:{
           Authorization: `Bearer ${token}`
@@ -70,10 +66,11 @@ const Dashboard = () => {
           ? {...e, quantity: res.data.quantity, canLog:false}:e
         )
       )
+      setLoading(false);
     } catch (err) {
       console.error(err.response?.data?.message || err.message);
       toast.error("Error logging dose");
-      
+      setLoading(false);
     }
   }
 
@@ -107,6 +104,8 @@ const Dashboard = () => {
   }, [user, token]);
 
   return (
+    <>
+    {loading && <Loader/>}
     <div className="space-y-8">
       {/* Welcome Section */}
       <div>
@@ -212,6 +211,7 @@ const Dashboard = () => {
         </Card>
       </section> */}
     </div>
+    </>
   );
 };
 
