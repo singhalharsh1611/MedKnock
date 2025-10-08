@@ -6,7 +6,10 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "src"), // maps @/ to src/
+      "@": path.resolve(__dirname, "./src"), // maps @/ to src/
     },
+  },
+  css: {
+    postcss: './postcss.config.js',
   },
 });
