@@ -40,6 +40,10 @@ const scheduleSchema = new mongoose.Schema({
     type: [String],
     default: []
   },
+  lastSyncedHash: {
+    type: String,
+    default: null,
+  },
 }, {
   timestamps: true
 });

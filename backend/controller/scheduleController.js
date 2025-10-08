@@ -3,8 +3,10 @@ import Schedule from "../models/scheduleModel.js";
 import DoseLog from "../models/doseLogModel.js";
 import User from "../models/userModel.js";
 import { google } from "googleapis";
+import crypto from "crypto";
 
-// safely parse and validate time strings array
+const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+
 const normalizeTimes = (times) => {
   if (!Array.isArray(times)) return [];
   return times.map((t) => String(t).trim()).filter((t) => t.length > 0);
@@ -13,360 +15,14 @@ const normalizeTimes = (times) => {
 const getTimeForToday = (timeStr) => {
   const [hours, minutes] = timeStr.split(":").map(Number);
   const now = new Date();
-  return new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    hours,
-    minutes,
-    0
-  );
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
 };
 
-// create new schedule
-
-export const createSchedule = async (req, res, next) => {
-  try {
-    console.log("req.user at createSchedule:", req.user);
-    const userId = req.user?.id; // set by auth middleware
-    const { pillName, dosage, times, riskScore, quantity, startDate } =
-      req.body;
-
-    // Authentication check
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
-
-    // Validation
-    if (!pillName || !pillName.trim()) {
-      return res.status(400).json({ message: "pillName is required" });
-    }
-
-    const timesArr = normalizeTimes(times);
-    if (!timesArr || timesArr.length === 0) {
-      return res.status(400).json({
-        message: 'Times must be a non-empty array of strings like "07:30"',
-      });
-    }
-
-    //CHECK IF  already exist
-    const exist = await Schedule.findOne({ pillName, userId });
-    if (exist) {
-      return res
-        .status(201)
-        .json({ success: false, message: "Schedule already exist" });
-    }
-    // Create schedule
-    const schedule = await Schedule.create({
-      userId,
-      pillName: pillName.trim(),
-      dosage: dosage?.trim() ?? "",
-      times: timesArr,
-      riskScore: typeof riskScore === "number" ? riskScore : 0, // default 0
-      quantity: typeof quantity === "number" ? quantity : 0, // default 0
-      startDate: startDate ? new Date(startDate) : undefined, // uses default in schema if undefined
-    });
-
-    //add to calendar
-    const user = await User.findById(userId);
-    if (user.googleCalendarToken && user.googleRefreshToken) {
-      // Run in background — don’t block the response
-      syncDosesToGoogleCalendar(user).catch((err) =>
-        console.error("Background calendar sync failed:", err)
-      );
-    }
-
-    return res.status(201).json(schedule);
-  } catch (err) {
-    return next(err);
-  }
+const getScheduleHash = (schedule) => {
+  const key = `${schedule.pillName}|${schedule.times.join(",")}|${schedule.startDate}|${schedule.quantity}|${schedule.riskScore}`;
+  return crypto.createHash("md5").update(key).digest("hex");
 };
 
-// GET /api/schedules
-export const getSchedules = async (req, res, next) => {
-  try {
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
-
-    //get user's streak
-    const user = await User.findById(userId).select("currentStreak");
-
-    const schedules = await Schedule.find({ userId }).sort({ createdAt: -1 });
-
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
-
-    //counters for stats
-    let totalDosesToday = 0;
-    let takenDosesToday = 0;
-
-    const now = new Date();
-    const items = [];
-
-    for (const schedule of schedules) {
-      if (schedule.isActive) {
-        totalDosesToday += schedule.times.length;
-
-        const takenCountForSchedule = await DoseLog.countDocuments({
-          // counting log that has already taken
-          scheduleId: schedule._id,
-          userId,
-          status: "taken",
-          timestamp: { $gte: todayStart, $lte: todayEnd },
-        });
-        takenDosesToday += takenCountForSchedule;
-      }
-      // Compute today’s dose times
-      const timesToday = schedule.times.map((t) => getTimeForToday(t));
-
-      // Check if dose can be logged now (+-1hr)
-      let canLog = false;
-      const missedTimes = [];
-      for (const doseTime of timesToday) {
-        const windowStart = new Date(doseTime.getTime() - 60 * 60 * 1000);
-        const windowEnd = new Date(doseTime.getTime() + 60 * 60 * 1000);
-        const taken = await DoseLog.findOne({
-          scheduleId: schedule._id,
-          userId,
-          timestamp: { $gte: windowStart, $lte: windowEnd },
-          status: "taken",
-        });
-        const diff = Math.abs(doseTime.getTime() - now.getTime());
-        if (!taken && diff <= 60 * 60 * 1000 && schedule.quantity > 0) {
-          canLog = true;
-        }
-      }
-
-      // mark missed doses older than 1h
-      for (const doseTime of timesToday) {
-        if (doseTime.getTime() + 1 * 60 * 60 * 1000 < now.getTime()) {
-          const existing = await DoseLog.findOne({
-            scheduleId: schedule._id,
-            userId,
-            timestamp: {
-              $gte: doseTime,
-              $lte: new Date(doseTime.getTime() + 2 * 60 * 60 * 1000),
-            },
-          });
-          if (!existing) {
-            await DoseLog.create({
-              scheduleId: schedule._id,
-              userId,
-              status: "missed",
-              timestamp: doseTime,
-            });
-            const h = doseTime.getHours().toString().padStart(2, "0");
-            const m = doseTime.getMinutes().toString().padStart(2, "0");
-            missedTimes.push(`${h}:${m}`);
-          } else if (existing.status === "missed") {
-            const h = doseTime.getHours().toString().padStart(2, "0");
-            const m = doseTime.getMinutes().toString().padStart(2, "0");
-            missedTimes.push(`${h}:${m}`);
-          }
-        }
-      }
-
-      items.push({ ...schedule.toObject(), canLog, missedTimes });
-    }
-
-    return res.status(200).json({
-      items,
-      total: items.length,
-      stats: { totalDosesToday, takenDosesToday },
-      currentStreak: user?.currentStreak || 0,
-    });
-  } catch (err) {
-    return next(err);
-  }
-};
-
-// PUT /api/schedules/:id
-export const updateScheduleById = async (req, res, next) => {
-  try {
-    const userId = req.user?.id;
-    const { id } = req.params;
-
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid schedule id" });
-    }
-
-    const schedule = await Schedule.findOne({ _id: id, userId });
-    if (!schedule) {
-      return res.status(404).json({ message: "Schedule not found" });
-    }
-
-    const { pillName, dosage, times, riskScore, quantity, startDate } =
-      req.body;
-
-    if (pillName !== undefined) schedule.pillName = String(pillName).trim();
-    if (dosage !== undefined) schedule.dosage = String(dosage).trim();
-
-    if (times !== undefined) {
-      // 👇 normalize or fallback to array of strings
-      const arr = Array.isArray(times) ? times.map(String) : [];
-      if (arr.length === 0) {
-        return res
-          .status(400)
-          .json({ message: "times must be a non-empty array" });
-      }
-      schedule.times = arr;
-    }
-
-    if (riskScore !== undefined) {
-      if (typeof riskScore !== "number") {
-        return res.status(400).json({ message: "riskScore must be a number" });
-      }
-      schedule.riskScore = riskScore;
-    }
-
-    if (quantity !== undefined) {
-      if (isNaN(quantity)) {
-        return res.status(400).json({ message: "quantity must be a number" });
-      }
-      schedule.quantity = Number(quantity);
-    }
-
-    if (startDate !== undefined) {
-      const parsedDate = new Date(startDate);
-      if (isNaN(parsedDate.getTime())) {
-        return res
-          .status(400)
-          .json({ message: "startDate must be a valid date" });
-      }
-      schedule.startDate = parsedDate;
-    }
-
-    await schedule.save();
-
-    // re sync all schedules after any update
-    const user = await User.findById(userId);
-    if (user.googleCalendarToken && user.googleRefreshToken) {
-      console.log(`[updateScheduleById] Triggering calendar sync for user ${userId} after update.`);
-      syncDosesToGoogleCalendar(user).catch((err) =>
-        console.error("Background calendar sync failed after update:", err)
-      );
-    }
-
-    return res.status(200).json(schedule);
-  } catch (err) {
-    return next(err);
-  }
-};
-
-// DELETE /api/schedules/:id
-export const deleteScheduleById = async (req, res, next) => {
-  try {
-    const userId = req.user?.id;
-    const { id } = req.params;
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
-
-    const schedule = await Schedule.findOne({ _id: id, userId });
-    if (!schedule) return res.status(404).json({ message: "Not found" });
-    const user = await User.findById(userId);
-
-    // Delete linked Google Calendar events first
-    if (user.googleCalendarToken && user.googleRefreshToken) {
-      try {
-        // --- ADDED LOG ---
-        console.log(
-          `[deleteScheduleById] Attempting to delete Google Calendar events for schedule: ${schedule._id}`
-        );
-        await deleteGoogleEventsForSchedule(user, schedule);
-      } catch (err) {
-        console.error("Failed to delete Google Calendar events:", err);
-      }
-    }
-
-    await Schedule.deleteOne({ _id: id, userId });
-
-    return res.status(200).json({ success: true, message: "Deleted", id });
-  } catch (err) {
-    return next(err);
-  }
-};
-
-// GET /api/v1/schedules/:id
-export const getScheduleById = async (req, res, next) => {
-  try {
-    const userId = req.user?.id;
-    const { id } = req.params;
-
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid schedule id" });
-    }
-
-    const schedule = await Schedule.findOne({ _id: id, userId });
-    if (!schedule) {
-      return res.status(404).json({ message: "Schedule not found" });
-    }
-
-    return res.status(200).json(schedule);
-  } catch (err) {
-    return next(err);
-  }
-};
-
-// patch /api/schedule/:id/toogle
-
-export const toggleScheduleActive = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user.id;
-    const schedule = await Schedule.findOne({ _id: id, userId });
-
-    if (!schedule)
-      return res.status(404).json({ message: "Schedule not found" });
-
-    // Toggle isActive
-    schedule.isActive = !schedule.isActive;
-    await schedule.save();
-
-    const user = await User.findById(userId);
-
-    if (user.googleCalendarToken && user.googleRefreshToken) {
-      if (schedule.isActive) {
-        // If the schedule is now ACTIVE, re-sync all of the user's schedules
-        console.log(
-          `[toggleScheduleActive] Re-syncing all schedules for user after activating: ${schedule._id}`
-        );
-        syncDosesToGoogleCalendar(user).catch((err) =>
-          console.error("Background reactivate sync failed:", err)
-        );
-      } else {
-        // If the schedule is now INACTIVE, just delete its events
-        console.log(
-          `[toggleScheduleActive] Deleting events for INACTIVE schedule: ${schedule._id}`
-        );
-        deleteGoogleEventsForSchedule(user, schedule).catch((err) =>
-          console.error("Background inactive delete failed:", err)
-        );
-      }
-    }
-
-    const schedules = await Schedule.find({ userId: req.user.id }).sort({
-      createdAt: -1,
-    });
-
-    // console.log(schedules);
-    return res.status(200).json({
-      success: true,
-      message: "Schedule toggled successfully",
-      schedules, // full updated list
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
 async function insertWithRetry(calendar, event, retries = 3) {
   for (let i = 0; i < retries; i++) {
@@ -382,6 +38,35 @@ async function insertWithRetry(calendar, event, retries = 3) {
     }
   }
 }
+
+async function deleteGoogleEventsForSchedule(user, schedule) {
+  if (!schedule.googleEventIds?.length || !user.googleCalendarToken) return;
+
+  const oAuth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET
+  );
+
+  oAuth2Client.setCredentials({
+    access_token: user.googleCalendarToken,
+    refresh_token: user.googleRefreshToken,
+  });
+
+  const calendar = google.calendar({ version: "v3", auth: oAuth2Client });
+
+  for (const eventId of schedule.googleEventIds) {
+    try {
+      await calendar.events.delete({ calendarId: "primary", eventId });
+      await sleep(150);
+    } catch (err) {
+      console.warn(`Failed to delete event ${eventId}:`, err.message);
+    }
+  }
+
+  schedule.googleEventIds = [];
+  await schedule.save();
+}
+
 
 export const syncDosesToGoogleCalendar = async (user) => {
   const userId = user._id;
@@ -408,27 +93,27 @@ export const syncDosesToGoogleCalendar = async (user) => {
   const calendar = google.calendar({ version: "v3", auth: oAuth2Client });
 
   for (const schedule of schedules) {
-    if (schedule.googleEventIds && schedule.googleEventIds.length > 0) {
-      try {
-        console.log(`Cleaning up old events for schedule ${schedule._id}...`);
-        await deleteGoogleEventsForSchedule(user, schedule);
-      } catch (err) {
-        console.error(
-          `Failed to delete previous events for ${schedule._id}:`,
-          err.message
-        );
-      }
+    const currentHash = getScheduleHash(schedule);
+    if (schedule.lastSyncedHash === currentHash) {
+      console.log(`Skipping unchanged schedule: ${schedule.pillName}`);
+      continue;
     }
+
+    // Clean up old events
+    if (schedule.googleEventIds?.length) {
+      await deleteGoogleEventsForSchedule(user, schedule);
+    }
+
     const dosesPerDay = schedule.times.length;
     if (!dosesPerDay || schedule.quantity <= 0) continue;
 
     let baseDate = new Date(schedule.startDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     if (baseDate < today) baseDate = today;
 
     const daysToSync = Math.ceil(schedule.quantity / dosesPerDay);
+    const newEventIds = [];
 
     for (let i = 0; i < daysToSync; i++) {
       const eventDate = new Date(baseDate);
@@ -438,97 +123,262 @@ export const syncDosesToGoogleCalendar = async (user) => {
       const month = String(eventDate.getMonth() + 1).padStart(2, "0");
       const date = String(eventDate.getDate()).padStart(2, "0");
 
+      // Batch insert for this day's doses
+      const eventPromises = [];
+
       for (let j = 0; j < dosesPerDay; j++) {
         if (i * dosesPerDay + j >= schedule.quantity) break;
 
         const [hour, minute] = schedule.times[j].split(":").map(Number);
-        const eventDateTime = `${year}-${month}-${date}T${String(hour).padStart(
-          2,
-          "0"
-        )}:${String(minute).padStart(2, "0")}:00`;
+        const eventDateTime = `${year}-${month}-${date}T${String(hour).padStart(2, "0")}:${String(
+          minute
+        ).padStart(2, "0")}:00`;
 
-        // Insert event
-        const eventRes = await insertWithRetry(calendar, {
+        const eventObj = {
           calendarId: "primary",
           requestBody: {
-            summary: `💊 ${schedule.pillName}${
-              schedule.dosage ? " - " + schedule.dosage : ""
-            }`,
-            description: `Take your scheduled dose of MedKnock.`,
-            start: {
-              dateTime: eventDateTime,
-              timeZone: "Asia/Kolkata",
-            },
-            end: {
-              dateTime: eventDateTime,
-              timeZone: "Asia/Kolkata",
-            },
-            reminders: {
-              useDefault: false,
-              overrides: [{ method: "popup", minutes: 0 }],
-            },
+            summary: `💊 ${schedule.pillName}${schedule.dosage ? " - " + schedule.dosage : ""}`,
+            description: "Take your scheduled dose of MedKnock.",
+            start: { dateTime: eventDateTime, timeZone: "Asia/Kolkata" },
+            end: { dateTime: eventDateTime, timeZone: "Asia/Kolkata" },
+            reminders: { useDefault: false, overrides: [{ method: "popup", minutes: 0 }] },
           },
-        });
-
-        // Store the eventId for later deletion
-        if (!schedule.googleEventIds) schedule.googleEventIds = [];
-        schedule.googleEventIds.push(eventRes.data.id);
-        await sleep(300);
+        };
+        eventPromises.push(insertWithRetry(calendar, eventObj));
       }
+
+      const results = await Promise.allSettled(eventPromises);
+      for (const res of results) {
+        if (res.status === "fulfilled" && res.value?.data?.id) {
+          newEventIds.push(res.value.data.id);
+        }
+      }
+
+      await sleep(500); // small pause to prevent rate-limit
     }
 
-    await schedule.save(); // Save event IDs in DB
+    schedule.googleEventIds = newEventIds;
+    schedule.lastSyncedHash = currentHash;
+    await schedule.save();
   }
 
   console.log(`--- Calendar Sync Completed for user ${userId} ---`);
 };
 
-async function deleteGoogleEventsForSchedule(user, schedule) {
-  console.log(`---> Starting deletion for schedule: ${schedule._id}`);
-  if (
-    !schedule.googleEventIds ||
-    schedule.googleEventIds.length === 0 ||
-    !user.googleCalendarToken
-  ) {
-    // --- ADDED LOG ---
-    console.log("... Deletion function returned early.");
-    if (!schedule.googleEventIds || schedule.googleEventIds.length === 0) {
-      console.log("... Reason: Schedule has no googleEventIds to delete.");
+
+// CREATE schedule
+export const createSchedule = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+    const { pillName, dosage, times, riskScore, quantity, startDate } = req.body;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    if (!pillName || !pillName.trim()) {
+      return res.status(400).json({ message: "pillName is required" });
     }
-    if (!user.googleCalendarToken) {
-      console.log("... Reason: User is missing Google Token.");
+
+    const timesArr = normalizeTimes(times);
+    if (!timesArr.length) {
+      return res.status(400).json({ message: 'Times must be like ["07:30", "12:00"]' });
     }
-    return;
+
+    const exist = await Schedule.findOne({ pillName, userId });
+    if (exist) {
+      return res.status(201).json({ success: false, message: "Schedule already exists" });
+    }
+
+    const schedule = await Schedule.create({
+      userId,
+      pillName: pillName.trim(),
+      dosage: dosage?.trim() ?? "",
+      times: timesArr,
+      riskScore: Number.isFinite(riskScore) ? riskScore : 0,
+      quantity: Number.isFinite(quantity) ? quantity : 0,
+      startDate: startDate ? new Date(startDate) : undefined,
+    });
+
+    const user = await User.findById(userId);
+    if (user.googleCalendarToken && user.googleRefreshToken) {
+      syncDosesToGoogleCalendar(user).catch((err) => console.error("Calendar sync failed:", err));
+    }
+
+    return res.status(201).json(schedule);
+  } catch (err) {
+    return next(err);
   }
+};
 
-  console.log(
-    `---> Found ${schedule.googleEventIds.length} events to delete for schedule ${schedule._id}`
-  );
-  console.log(`---> Event IDs: [${schedule.googleEventIds.join(", ")}]`);
+// GET all schedules
+export const getSchedules = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-  const oAuth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET
-  );
+    const user = await User.findById(userId).select("currentStreak");
+    const schedules = await Schedule.find({ userId }).sort({ createdAt: -1 });
 
-  oAuth2Client.setCredentials({
-    access_token: user.googleCalendarToken,
-    refresh_token: user.googleRefreshToken,
-  });
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
 
-  const calendar = google.calendar({ version: "v3", auth: oAuth2Client });
+    const todayLogs = await DoseLog.find({
+      userId,
+      timestamp: { $gte: todayStart, $lte: todayEnd },
+    }).lean();
 
-  for (const eventId of schedule.googleEventIds) {
-    try {
-      await calendar.events.delete({ calendarId: "primary", eventId });
-      console.log(`---> Successfully deleted event: ${eventId}`);
-      await sleep(200);
-    } catch (err) {
-      console.warn(`Failed to delete event ${eventId}:`, err.message);
+    const logsBySchedule = {};
+    for (const log of todayLogs) {
+      if (!logsBySchedule[log.scheduleId]) logsBySchedule[log.scheduleId] = [];
+      logsBySchedule[log.scheduleId].push(log);
     }
-  }
 
-  schedule.googleEventIds = [];
-  await schedule.save();
-  console.log(`---> Cleared event IDs from DB for schedule ${schedule._id}`);
-}
+    let totalDosesToday = 0;
+    let takenDosesToday = 0;
+    const now = new Date();
+
+    const items = schedules.map((schedule) => {
+      const timesToday = schedule.times.map((t) => getTimeForToday(t));
+      const logs = logsBySchedule[schedule._id] || [];
+
+      totalDosesToday += schedule.isActive ? schedule.times.length : 0;
+      takenDosesToday += logs.filter((l) => l.status === "taken").length;
+
+      const missedTimes = [];
+      let canLog = false;
+
+      for (const doseTime of timesToday) {
+        const diff = Math.abs(now - doseTime);
+        const alreadyTaken = logs.some(
+          (l) =>
+            l.status === "taken" &&
+            Math.abs(l.timestamp.getTime() - doseTime.getTime()) <= 60 * 60 * 1000
+        );
+
+        if (!alreadyTaken && diff <= 60 * 60 * 1000 && schedule.quantity > 0) {
+          canLog = true;
+        } else if (!alreadyTaken && doseTime.getTime() + 60 * 60 * 1000 < now.getTime()) {
+          missedTimes.push(
+            `${doseTime.getHours().toString().padStart(2, "0")}:${doseTime
+              .getMinutes()
+              .toString()
+              .padStart(2, "0")}`
+          );
+        }
+      }
+
+      return { ...schedule.toObject(), canLog, missedTimes };
+    });
+
+    return res.status(200).json({
+      items,
+      total: items.length,
+      stats: { totalDosesToday, takenDosesToday },
+      currentStreak: user?.currentStreak || 0,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// UPDATE schedule
+export const updateScheduleById = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid schedule id" });
+    }
+
+    const schedule = await Schedule.findOne({ _id: id, userId });
+    if (!schedule) return res.status(404).json({ message: "Schedule not found" });
+
+    const { pillName, dosage, times, riskScore, quantity, startDate } = req.body;
+    if (pillName !== undefined) schedule.pillName = String(pillName).trim();
+    if (dosage !== undefined) schedule.dosage = String(dosage).trim();
+    if (Array.isArray(times) && times.length > 0) schedule.times = times.map(String);
+    if (riskScore !== undefined && typeof riskScore === "number") schedule.riskScore = riskScore;
+    if (quantity !== undefined && !isNaN(quantity)) schedule.quantity = Number(quantity);
+    if (startDate !== undefined && !isNaN(new Date(startDate).getTime()))
+      schedule.startDate = new Date(startDate);
+
+    await schedule.save();
+
+    const user = await User.findById(userId);
+    if (user.googleCalendarToken && user.googleRefreshToken) {
+      syncDosesToGoogleCalendar(user).catch((err) => console.error("Sync failed:", err));
+    }
+
+    return res.status(200).json(schedule);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// DELETE schedule
+export const deleteScheduleById = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const schedule = await Schedule.findOne({ _id: id, userId });
+    if (!schedule) return res.status(404).json({ message: "Not found" });
+
+    const user = await User.findById(userId);
+    if (user.googleCalendarToken && user.googleRefreshToken) {
+      await deleteGoogleEventsForSchedule(user, schedule);
+    }
+
+    await Schedule.deleteOne({ _id: id, userId });
+    return res.status(200).json({ success: true, message: "Deleted", id });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// TOGGLE active
+export const toggleScheduleActive = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const schedule = await Schedule.findOne({ _id: id, userId });
+    if (!schedule) return res.status(404).json({ message: "Schedule not found" });
+
+    schedule.isActive = !schedule.isActive;
+    await schedule.save();
+
+    const user = await User.findById(userId);
+    if (user.googleCalendarToken && user.googleRefreshToken) {
+      if (schedule.isActive) {
+        syncDosesToGoogleCalendar(user).catch(console.error);
+      } else {
+        deleteGoogleEventsForSchedule(user, schedule).catch(console.error);
+      }
+    }
+
+    const schedules = await Schedule.find({ userId }).sort({ createdAt: -1 });
+    return res.status(200).json({ success: true, message: "Toggled", schedules });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET by ID
+export const getScheduleById = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    if (!mongoose.Types.ObjectId.isValid(id))
+      return res.status(400).json({ message: "Invalid schedule id" });
+
+    const schedule = await Schedule.findOne({ _id: id, userId });
+    if (!schedule) return res.status(404).json({ message: "Schedule not found" });
+    return res.status(200).json(schedule);
+  } catch (err) {
+    next(err);
+  }
+};
