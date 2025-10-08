@@ -13,7 +13,7 @@ import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import { useAuth } from "./contexts/AuthContext";
 import ForgotPassword from "./pages/ForgetPassword";
-import Compare from "./pages/compare";
+import Compare from "./pages/Compare";
 import StatsPage from "./pages/StatsPage";
 import GoogleSuccess from "./components/GoogleSucess";
 
