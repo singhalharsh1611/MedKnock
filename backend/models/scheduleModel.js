@@ -35,7 +35,15 @@ const scheduleSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
-  }
+  },
+  googleEventIds: {
+    type: [String],
+    default: []
+  },
+  lastSyncedHash: {
+    type: String,
+    default: null,
+  },
 }, {
   timestamps: true
 });

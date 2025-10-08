@@ -56,7 +56,7 @@ const passportSetup = () => {
       done(error, null);
     }
   }));
-
+  
   passport.serializeUser((user, done) => {
     done(null, user.id);
   });
