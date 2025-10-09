@@ -3,8 +3,12 @@ import Schedule from "../models/scheduleModel.js";
 import DoseLog from "../models/doseLogModel.js";
 import User from "../models/userModel.js";
 import { sendNotification } from "../config/firebaseNotifications.js";
-import nodemailer from "nodemailer";
 import fetch from "node-fetch";
+import { sendWhatsAppMessage } from "../config/twilio.js";
+import sgMail from '@sendgrid/mail';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // helper: convert "HH:mm" string to Date object for today
 const getTimeForToday = (timeStr) => {
@@ -14,30 +18,29 @@ const getTimeForToday = (timeStr) => {
 };
 
 //helper for sending mail notification
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
 const sendEmail = async (toEmail, subject, htmlContent, textContent) => {
+  // Create the message object for SendGrid
+  const msg = {
+    to: toEmail,
+    from: process.env.SENDGRID_VERIFIED_SENDER, // This MUST be the email you verified on SendGrid
+    subject: subject,
+    text: textContent || htmlContent, // Provides a fallback if only HTML is present
+    html: htmlContent,
+  };
+
   try {
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.SENDER_GMAIL,
-        pass: process.env.SENDER_PASS, // Use App Password
-      },
-    });
-
-    const mailOptions = {
-      from: `<${process.env.SENDER_GMAIL}>`,
-      to: toEmail,
-      subject: subject,
-      text: textContent || "",
-      html: htmlContent || "",
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent:", info.messageId);
-    return { success: true, info };
-  } catch (err) {
-    console.error("Email sending failed:", err);
-    return { success: false, error: err };
+    await sgMail.send(msg);
+    console.log(`Email sent successfully to ${toEmail} via SendGrid`);
+    return { success: true };
+  } catch (error) {
+    console.error("SendGrid email sending failed:", error);
+    if (error.response) {
+      // Log the detailed error from SendGrid's API
+      console.error(error.response.body);
+    }
+    return { success: false, error: error };
   }
 };
 
@@ -185,6 +188,17 @@ export const startCronJobs = () => {
 
           // Send email notification
           await sendEmail(user.email, title, `<h3>${body}</ h3>`, body);
+
+          //send whatsapp notification
+          if (user.phone) {
+          const toNumber = `whatsapp:+91${user.phone}`; 
+          try {
+            await sendWhatsAppMessage(toNumber, user.firstName, schedule.pillName, timeString);
+            console.log(`WhatsApp reminder sent to ${toNumber}`);
+          } catch (err) {
+            console.error("WhatsApp send failed:", err.message);
+          }
+        }
         }
       }
     } catch (err) {
@@ -222,6 +236,18 @@ cron.schedule("0 */6 * * *", async () => {
 
         // Send email notification
         await sendEmail(user.email, title, `<h3>${body}</h3>`, body);
+
+        //send whatsapp notification
+        if (user.phone) {
+          const toNumber = `whatsapp:+91${user.phone}`;
+          try {
+            await sendWhatsAppMessage(toNumber, user.firstName, schedule.pillName, timeString, body);
+            console.log(`WhatsApp reminder sent to ${toNumber}`);
+          } catch (err) {
+            console.error("WhatsApp send failed:", err.message);
+          }
+        }
+
 
         console.log(`Low stock notification sent to ${user.email} for ${schedule.pillName}`);
       }

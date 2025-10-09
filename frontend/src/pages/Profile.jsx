@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
+import QRCode from "react-qr-code";
 import axios from "axios";
 
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
@@ -232,7 +233,7 @@ export default function ProfilePage() {
           </Label>
           <Button
             variant="default"
-            className={`mt-3 text-white ${
+            className={`mt-8 text-white ${
               formData.isGoogleConnected
                 ? "bg-red-600 hover:bg-red-700"
                 : "bg-green-600 hover:bg-green-700"
@@ -266,7 +267,37 @@ export default function ProfilePage() {
               ? "Disconnect Google Calendar"
               : "Connect Google Calendar"}
           </Button>
+
+          {/* WhatsApp Reminders Signup */}
+          <div className="mt-6 border-2 border-gray-500 rounded-xl p-4 text-center space-y-3 shadow-sm">
+            <h3 className="text-lg font-semibold">Get WhatsApp Reminders</h3>
+            <p className="text-sm text-muted-foreground">
+              Click below or scan the QR code to join our WhatsApp reminders list.
+            </p>
+
+            <Button
+              variant="outline"
+              onClick={() => {
+                window.open(
+                  "https://api.whatsapp.com/send/?phone=%2B14155238886&text=join+ice-plane&type=phone_number&app_absent=0",
+                  "_blank"
+                );
+              }}
+            >
+              Sign up for WhatsApp Reminders
+            </Button>
+
+            <div className="mt-4 flex justify-center p-3 rounded-lg shadow-sm">
+              <QRCode
+                value="https://api.whatsapp.com/send/?phone=%2B14155238886&text=join+ice-plane&type=phone_number&app_absent=0"
+                size={150}
+              />
+            </div>
+          </div>
+
         </div>
+
+
 
         {/* View Mode */}
         <div className="flex-1 w-full">
