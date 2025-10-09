@@ -16,6 +16,7 @@ import ForgotPassword from "./pages/ForgetPassword";
 import Compare from "./pages/compare";
 import StatsPage from "./pages/StatsPage";
 import GoogleSuccess from "./components/GoogleSucess";
+import Last7DaysLogs from "./pages/Last7DaysLogs";
 
 function App() {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
@@ -38,6 +39,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="compare" element={<Compare />} />
           <Route path="stats" element={<StatsPage />} />
+          <Route path="logs" element={<Last7DaysLogs />} />
         </Route>
         <Route path="*" element={<NotFound />} />
 
