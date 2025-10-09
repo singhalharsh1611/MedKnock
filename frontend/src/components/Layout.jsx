@@ -15,12 +15,14 @@ export const Layout = () => {
   if (!token) return <Navigate to="/login" replace />;
   // console.log(user);
 
-  const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },
-    { path: '/grimoire', label: 'My Grimoire', icon: BookOpen },
-    { path: '/compare', label: 'Compare', icon: Scale },
-    { path: '/stats', label: 'Stats', icon: BookOpen },
-  ];
+ const navItems = [
+  { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },
+  { path: '/grimoire', label: 'My Grimoire', icon: BookOpen },
+  { path: '/compare', label: 'Compare', icon: Scale },
+  { path: '/stats', label: 'Statistics', icon: BookOpen },
+  { path: '/reports', label: 'Reports', icon: BookOpen }, // New Reports page
+];
+
 
   const isActive = (path) => location.pathname === path;
 

@@ -1,26 +1,85 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Heart, ShieldCheck, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 
+const FeatureCard = ({ feature }) => {
+  const cardRef = useRef(null);
+  const [shineStyle, setShineStyle] = useState({
+    opacity: 0,
+    left: "0px",
+    top: "0px",
+  });
+
+  const handleMouseMove = (e) => {
+    if (!cardRef.current) return;
+
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    setShineStyle({
+      opacity: 1,
+      left: `${x}px`,
+      top: `${y}px`,
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setShineStyle({ ...shineStyle, opacity: 0 });
+  };
+
+  const shineGradient = `radial-gradient(circle at center, ${feature.from}25, transparent 70%)`;
+
+  return (
+    <div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="relative rounded-3xl overflow-hidden transition-transform duration-300 ease-in-out hover:scale-[1.03] border border-border/40 bg-background/40"
+    >
+      <div
+        className="absolute w-72 h-72 rounded-full pointer-events-none transition-opacity duration-500"
+        style={{
+          ...shineStyle,
+          background: shineGradient,
+
+          transform: "translate(-50%, -50%)",
+        }}
+      />
+
+      <div className="relative p-8 backdrop-blur-md h-full z-10">
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"
+          style={{
+            background: `linear-gradient(135deg, ${feature.from}, ${feature.to})`,
+          }}
+        >
+          {feature.icon}
+        </div>
+        <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
+        <p className="text-muted-foreground leading-relaxed">{feature.desc}</p>
+      </div>
+    </div>
+  );
+};
+
 export const LandingPage = () => {
   const navigate = useNavigate();
   const medKnockText = "MedKnock".split("");
 
-  // Animation variants for the container of the letters to stagger them
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { 
-        staggerChildren: 0.1, // Each letter appears 0.1s after the previous one
-        delayChildren: 0.5 // Start the animation after a short delay
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.5,
       },
     },
   };
 
-  // Animation variants for each individual letter
   const childVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -34,55 +93,27 @@ export const LandingPage = () => {
     },
   };
 
-
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-background text-foreground">
-      {/* === Animated Background === */}
       <div className="fixed inset-0 bg-gradient-to-br from-[#230042] via-[#7600FF] to-[#00FFF5] opacity-10 -z-10" />
-
-      {/* Floating Orbs */}
       <motion.div
         className="fixed top-20 left-10 w-64 h-64 bg-[#FFE066]/15 rounded-full blur-3xl"
-        animate={{
-          y: [0, 50, 0],
-          x: [0, 30, 0],
-          scale: [1, 1.2, 1],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
+        animate={{ y: [0, 50, 0], x: [0, 30, 0], scale: [1, 1.2, 1] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
         className="fixed bottom-20 right-10 w-96 h-96 bg-[#C1FF72]/15 rounded-full blur-3xl"
-        animate={{
-          y: [0, -50, 0],
-          x: [0, -30, 0],
-          scale: [1, 1.3, 1],
-        }}
-        transition={{
-          duration: 10,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
+        animate={{ y: [0, -50, 0], x: [0, -30, 0], scale: [1, 1.3, 1] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
         className="fixed top-1/2 left-1/2 w-80 h-80 bg-[#00FFB3]/12 rounded-full blur-3xl"
-        animate={{
-          y: [0, 40, 0],
-          x: [0, -40, 0],
-          scale: [1, 1.1, 1],
-        }}
-        transition={{
-          duration: 9,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
+        animate={{ y: [0, 40, 0], x: [0, -40, 0], scale: [1, 1.1, 1] }}
+        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
       />
 
-      {/* === Navbar === */}
-      <header className="relative flex justify-between items-center px-8 py-6 border-b border-border/50 backdrop-blur-xl bg-background/80 z-10">
+      {/* Navbar. */}
+      <header className="relative flex justify-between items-center px-8 py-6 border-b border-border/50 backdrop-blur-xl bg-background/80 z-20">
         <motion.div
           className="flex items-center gap-3"
           initial={{ opacity: 0, x: -20 }}
@@ -116,8 +147,8 @@ export const LandingPage = () => {
         </motion.div>
       </header>
 
-      {/* === Hero Section === */}
-      <main className="relative flex-grow flex flex-col items-center justify-center text-center px-6 py-20">
+      {/* Hero Section*/}
+      <main className="relative flex-grow flex flex-col items-center justify-center text-center px-6 py-20 z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -132,10 +163,11 @@ export const LandingPage = () => {
           >
             <div className="flex items-center gap-2 px-6 py-3 rounded-full bg-[#C1FF72]/10 border border-[#C1FF72]/30 backdrop-blur-sm">
               <Sparkles className="h-5 w-5 text-[#C1FF72]" />
-              <span className="text-sm font-semibold">Your Health, Transformed</span>
+              <span className="text-sm font-semibold">
+                Your Health, Transformed
+              </span>
             </div>
           </motion.div>
-
           <motion.h1
             className="text-6xl md:text-7xl lg:text-8xl font-extrabold mb-8 leading-tight"
             initial={{ opacity: 0, y: 20 }}
@@ -143,7 +175,7 @@ export const LandingPage = () => {
             transition={{ delay: 0.3, duration: 0.8 }}
           >
             Welcome to{" "}
-            <motion.span 
+            <motion.span
               className="bg-gradient-to-r from-[#00FFF5] to-[#7600FF] bg-clip-text text-transparent inline-block"
               variants={containerVariants}
               initial="hidden"
@@ -151,23 +183,25 @@ export const LandingPage = () => {
               aria-label="MedKnock"
             >
               {medKnockText.map((char, index) => (
-                <motion.span key={index} variants={childVariants} className="inline-block">
+                <motion.span
+                  key={index}
+                  variants={childVariants}
+                  className="inline-block"
+                >
                   {char}
                 </motion.span>
               ))}
             </motion.span>
           </motion.h1>
-
           <motion.p
             className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.5, duration: 0.8 }}
           >
-            Your personal alchemist for health and medicine — track, compare, and
-            manage your wellness journey with precision and magical care.
+            Your personal alchemist for health and medicine — track, compare,
+            and manage your wellness journey with precision and magical care.
           </motion.p>
-
           <motion.div
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
             initial={{ opacity: 0, y: 20 }}
@@ -192,7 +226,6 @@ export const LandingPage = () => {
           </motion.div>
         </motion.div>
 
-        {/* === Feature Cards === */}
         <motion.div
           className="grid md:grid-cols-3 gap-8 max-w-6xl mt-24"
           initial={{ opacity: 0, y: 40 }}
@@ -222,30 +255,16 @@ export const LandingPage = () => {
               to: "#00FFF5",
             },
           ].map((feature, i) => (
-            <div
-              key={i}
-              className="p-8 rounded-3xl bg-background/40 border border-border/40 hover:scale-[1.03] hover:shadow-lg transition-transform backdrop-blur-md group"
-            >
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
-                style={{
-                  background: `linear-gradient(135deg, ${feature.from}, ${feature.to})`,
-                }}
-              >
-                {feature.icon}
-              </div>
-              <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-              <p className="text-muted-foreground leading-relaxed">{feature.desc}</p>
-            </div>
+            <FeatureCard key={i} feature={feature} />
           ))}
         </motion.div>
       </main>
 
-      {/* === Footer === */}
-      <footer className="relative text-center py-8 text-sm text-muted-foreground border-t border-border/50 backdrop-blur-xl bg-background/80">
+      {/* Footer */}
+      <footer className="relative text-center py-8 text-sm text-muted-foreground border-t border-border/50 backdrop-blur-xl bg-background/80 z-20">
         <p>
-          © {new Date().getFullYear()} MedKnock. Crafted with care for your wellness
-          journey.
+          © {new Date().getFullYear()} MedKnock. Crafted with care for your
+          wellness journey.
         </p>
       </footer>
     </div>
@@ -253,4 +272,3 @@ export const LandingPage = () => {
 };
 
 export default LandingPage;
-
