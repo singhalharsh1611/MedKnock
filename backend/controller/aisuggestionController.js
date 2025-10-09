@@ -26,7 +26,7 @@ export const getAISuggestions = async (req, res) => {
       return res.json({ suggestions: ["No schedules found for this user."] });
     }
 
-    // 2️⃣ Compute overview totals
+    // 2️ Compute overview totals
     const totals = { taken: 0, missed: 0 };
     for (const log of doseLogs) {
       if (log.status === "taken") totals.taken++;
@@ -37,7 +37,7 @@ export const getAISuggestions = async (req, res) => {
         ? (totals.taken / (totals.taken + totals.missed)) * 100
         : 0;
 
-    // 3️⃣ Compute daily stats (7-day trend)
+    // 3️ Compute daily stats (7-day trend)
     const dailyMap = {};
     for (let i = 0; i < 7; i++) {
       const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);

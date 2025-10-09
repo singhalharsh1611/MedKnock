@@ -36,14 +36,14 @@ export const logDoseAsTaken = async (req, res, next) => {
       scheduleId,
       userId,
       status: "taken",
-      timestamp: { 
+      timestamp: {
         $gte: new Date(currentSlot.getTime() - 60 * 60 * 1000),
         $lte: new Date(currentSlot.getTime() + 60 * 60 * 1000)
       }
     });
 
     if (existing) {
-      return res.status(400).json({ message: "Dose already marked as taken for this time" ,existing});
+      return res.status(400).json({ message: "Dose already marked as taken for this time", existing });
     }
 
     //  Log the dose
@@ -56,7 +56,7 @@ export const logDoseAsTaken = async (req, res, next) => {
 
 
     // decrease risk score for positive reinforcement
-    if(schedule.riskScore > 0){
+    if (schedule.riskScore > 0) {
       schedule.riskScore = Math.max(0, schedule.riskScore - 1);
     }
 
@@ -115,6 +115,61 @@ export const logDoseAsTaken = async (req, res, next) => {
         takenDosesToday === totalDosesToday
           ? "All doses for today taken — streak updated!"
           : "Dose logged successfully"
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+
+export const getLast7DaysDoseLogs = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    // Calculate last 7 days range (including today)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - 5);
+
+    // Fetch dose logs from last 7 days
+    console.log(userId);
+    const logs = await DoseLog.find({
+      userId,
+      timestamp: { $gte: startDate, $lte: endDate },
+    })
+      .populate({
+        path: "scheduleId",
+        select: "pillName dosage times quantity",
+      })
+      .sort({ timestamp: -1 }) // latest first
+      .lean();
+
+    if (!logs.length)
+      return res.status(200).json({ message: "No logs found for the last 7 days", data: [] });
+
+    logs.filter(
+      (log) => log.scheduleId?.pillName && log.scheduleId.pillName.trim() !== ""
+    );
+    // Format response
+    const formattedLogs = logs.map((log) => ({
+      _id: log._id,
+      medicineName: log.scheduleId?.pillName || "Unknown",
+      dosage: log.scheduleId?.dosage || "",
+      quantityRemaining: log.scheduleId?.quantity ?? null,
+      status: log.status,
+      timestamp: log.timestamp,
+      time: new Date(log.timestamp).toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      date: new Date(log.timestamp).toISOString().split("T")[0],
+    }));
+
+    return res.status(200).json({
+      message: "Last 7 days dose logs fetched successfully",
+      count: formattedLogs.length,
+      data: formattedLogs,
     });
   } catch (err) {
     return next(err);

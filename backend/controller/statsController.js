@@ -65,7 +65,7 @@ export const getDaily = async (req, res) => {
     {
       $group: {
         _id: {
-          $dateToString: { format: '%Y-%m-%d', date: '$timestamp', timezone: tz },
+          $dateToString: { format: '%Y-%m-%d', date: '$timestamp'},
         },
         taken: { $sum: { $cond: [{ $eq: ['$status', 'taken'] }, 1, 0] } },
         missed: { $sum: { $cond: [{ $eq: ['$status', 'missed'] }, 1, 0] } },
