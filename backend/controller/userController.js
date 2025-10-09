@@ -190,6 +190,58 @@ export const uploadProfilePhoto = async (req, res) => {
       .json({ success: false, message: "Upload failed", error: err.message });
   }
 };
+// --- Email Verification for Register ---
+export const sendVerificationOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!validator.isEmail(email)) {
+      return res.json({ success: false, message: "Invalid email" });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.json({ success: false, message: "User already exists" });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    otpStore[email] = { otp, expires: Date.now() + 5 * 60 * 1000 };
+
+    const msg = {
+      to: email,
+      from: process.env.SENDGRID_VERIFIED_SENDER,
+      subject: "Verify Your Email for MedKnock Registration",
+      text: `Your verification OTP is: ${otp}`,
+      html: `<h3>Welcome to MedKnock!<br>Your verification OTP is: <strong>${otp}</strong></h3>`,
+    };
+
+    await sgMail.send(msg);
+    console.log(`Verification OTP sent to ${email}`);
+    res.json({ success: true, message: "Verification OTP sent to email" });
+  } catch (error) {
+    console.error("Email sending error:", error.message);
+    res.status(500).json({ success: false, message: "Email failed" });
+  }
+};
+
+export const verifyEmailOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const stored = otpStore[email];
+    if (!stored || stored.otp !== otp || stored.expires < Date.now()) {
+      return res.json({ success: false, message: "Invalid or expired OTP" });
+    }
+
+    delete otpStore[email]; // remove used OTP
+    res.json({ success: true, message: "Email verified successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Verification failed" });
+  }
+};
+
 //forgot password mail sender
 const otpStore = {};
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);

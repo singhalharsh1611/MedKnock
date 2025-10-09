@@ -1,5 +1,5 @@
 import express from "express";
-import { allUser, getUserById, login, register, sendMail, updatePassword, updateUserProfile, uploadProfilePhoto } from "../controller/userController.js";
+import { allUser, getUserById, login, register, sendMail, sendVerificationOTP, updatePassword, updateUserProfile, uploadProfilePhoto, verifyEmailOTP } from "../controller/userController.js";
 import multer from "multer";
 import protect from "../middlewares/authMiddleware.js";
 import passport from "passport";
@@ -44,5 +44,6 @@ router.patch('/:id', updateUserProfile);
 router.patch('/:id/photo', protect, upload.single('file'), uploadProfilePhoto);
 router.post('/forgot-password', sendMail);
 router.post('/update-password', updatePassword);
-
+router.post('/send-verification-otp', sendVerificationOTP);
+router.post('/verify-email-otp', verifyEmailOTP);
 export default router;
