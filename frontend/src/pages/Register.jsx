@@ -5,7 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Sparkles, Mail, Lock, User, Chrome, KeyRound, Loader2 } from "lucide-react";
+import {
+  Sparkles,
+  Mail,
+  Lock,
+  User,
+  Chrome,
+  KeyRound,
+  Loader2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
 import DarkVeil from "@/components/ui/DarkVeil";
@@ -13,7 +21,7 @@ import axios from "axios";
 
 const Register = () => {
   const { register, token } = useAuth();
-  if (token) return <Navigate to='/dashboard' />
+  if (token) return <Navigate to="/dashboard" />;
   const navigate = useNavigate();
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -38,9 +46,12 @@ const Register = () => {
 
     try {
       setIsLoading(true);
-      const response = await axios.post(`${backendUrl}/api/v1/user/send-verification-otp`, {
-        email: formData.email,
-      });
+      const response = await axios.post(
+        `${backendUrl}/api/v1/user/send-verification-otp`,
+        {
+          email: formData.email,
+        }
+      );
 
       if (response.data.success) {
         toast.success("OTP sent to your email");
@@ -65,10 +76,13 @@ const Register = () => {
 
     try {
       setIsLoading(true);
-      const verifyRes = await axios.post(`${backendUrl}/api/v1/user/verify-email-otp`, {
-        email: formData.email,
-        otp,
-      });
+      const verifyRes = await axios.post(
+        `${backendUrl}/api/v1/user/verify-email-otp`,
+        {
+          email: formData.email,
+          otp,
+        }
+      );
 
       if (!verifyRes.data.success) {
         toast.error(verifyRes.data.message);
@@ -93,7 +107,9 @@ const Register = () => {
   const handleGoogleRegister = (e) => {
     e.preventDefault();
     localStorage.removeItem("token");
-    window.location.href = `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/google`;
+    window.location.href = `${
+      import.meta.env.VITE_BACKEND_URL
+    }/api/v1/user/google`;
   };
 
   return (
@@ -107,15 +123,29 @@ const Register = () => {
             <div className="flex justify-center mb-4">
               <Sparkles className="h-12 w-12 text-magical-purple elixir-glow" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">MedKnock</h1>
-            <p className="text-muted-foreground">Create your alchemist grimoire</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              MedKnock
+            </h1>
+            <p className="text-muted-foreground">
+              Create your alchemist grimoire
+            </p>
           </div>
 
-          <Card className="p-8 shadow-2xl border-2 border-magical-purple/20">
+          <Card
+            className="p-12 text-center max-w-md w-full shadow-2xl z-10"
+            style={{
+              background: "rgba(255, 255, 255, 0.03)",
+              backdropFilter: "blur(3px)",
+              position: "absolute",
+            }}
+          >
             {step === 1 && (
               <form onSubmit={handleSendOTP} className="space-y-6">
                 <div>
-                  <Label htmlFor="firstName" className="flex items-center gap-2">
+                  <Label
+                    htmlFor="firstName"
+                    className="flex items-center gap-2"
+                  >
                     <User className="h-4 w-4" /> First Name
                   </Label>
                   <Input
@@ -179,7 +209,10 @@ const Register = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="confirmPassword" className="flex items-center gap-2">
+                  <Label
+                    htmlFor="confirmPassword"
+                    className="flex items-center gap-2"
+                  >
                     <Lock className="h-4 w-4" /> Confirm Password
                   </Label>
                   <Input

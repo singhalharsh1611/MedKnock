@@ -21,11 +21,9 @@ const Login = () => {
     setIsLoading(true);
     try {
       await login(formData.email, formData.password);
-    }
-    catch (err) {
+    } catch (err) {
       console.log("Login failed: ", err);
-    }
-    finally {
+    } finally {
       setIsLoading(false);
     }
   };
@@ -33,9 +31,10 @@ const Login = () => {
   const handleGoogleLogin = (e) => {
     e.preventDefault();
     localStorage.removeItem("token");
-    window.location.href = `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/google`;
+    window.location.href = `${
+      import.meta.env.VITE_BACKEND_URL
+    }/api/v1/user/google`;
   };
-
 
   return (
     <div className="relative min-h-screen">
@@ -59,7 +58,14 @@ const Login = () => {
             </p>
           </div>
 
-          <Card className="p-8 shadow-2xl border-2 border-magical-purple/20">
+          <Card
+            className="p-12 text-center max-w-md w-full shadow-2xl z-10"
+            style={{
+              background: "rgba(255, 255, 255, 0.03)",
+              backdropFilter: "blur(3px)",
+              position: "absolute",
+            }}
+          >
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <Label htmlFor="email" className="flex items-center gap-2">
@@ -106,7 +112,7 @@ const Login = () => {
               </div>
 
               <Button
-                type="submit" 
+                type="submit"
                 className="magical-button w-full"
                 disabled={isLoading}
               >

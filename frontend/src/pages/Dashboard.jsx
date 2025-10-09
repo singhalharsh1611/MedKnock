@@ -110,7 +110,7 @@ const Dashboard = () => {
       {/* Welcome Section */}
       <div>
         <h1 className="text-3xl font-bold text-foreground mb-2">
-          Welcome back, Alchemist! ✨
+          Welcome back, {user?.firstName || "Alchemist"}! ✨
         </h1>
         <p className="text-muted-foreground">
           Your magical health journey continues today

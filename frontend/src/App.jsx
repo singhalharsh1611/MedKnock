@@ -17,6 +17,7 @@ import Compare from "./pages/Compare";
 import StatsPage from "./pages/StatsPage";
 import GoogleSuccess from "./components/GoogleSucess";
 import LandingPage from "./pages/LandingPage";
+import { ReportsPage } from "./pages/ReportsPage";
 
 import Last7DaysLogs from "./pages/Last7DaysLogs";
 
@@ -47,6 +48,7 @@ function App() {
             <Route path="profile" element={<Profile />} />
             <Route path="compare" element={<Compare />} />
             <Route path="stats" element={<StatsPage />} />
+            <Route path="reports" element={<ReportsPage />} />
           </Route>
         )}
 
