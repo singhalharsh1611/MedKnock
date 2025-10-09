@@ -1,15 +1,24 @@
 import express from "express";
-import { allUser, getUserById, login, register, sendMail, updatePassword, updateUserProfile, uploadProfilePhoto } from "../controller/userController.js";
+import { allUser, getUserById, login, register, sendMail, sendVerificationOTP, updatePassword, updateUserProfile, uploadProfilePhoto, verifyEmailOTP } from "../controller/userController.js";
 import multer from "multer";
 import protect from "../middlewares/authMiddleware.js";
 import passport from "passport";
 import jwt from 'jsonwebtoken';
+import {
+  connectGoogleCalendar,
+  googleCalendarCallback,
+  disconnectGoogleCalendar,
+} from "../controller/googleCalendarController.js";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.post('/register',register);
-router.post('/login',login);
+
+//calender
+router.get("/google-calendar", connectGoogleCalendar);
+router.get("/google-calendar/callback", googleCalendarCallback);
+router.post("/google-calendar/disconnect", protect, disconnectGoogleCalendar);
+
 // Auth with Google
 router.get('/google', passport.authenticate('google', {
     scope: ['profile', 'email']
@@ -27,10 +36,14 @@ router.get('/google/callback', passport.authenticate('google', {
     }
 });
 
+router.post('/register',register);
+router.post('/login',login);
 router.get('/',allUser);
 router.get('/:id', getUserById);
 router.patch('/:id', updateUserProfile);
 router.patch('/:id/photo', protect, upload.single('file'), uploadProfilePhoto);
 router.post('/forgot-password', sendMail);
 router.post('/update-password', updatePassword);
+router.post('/send-verification-otp', sendVerificationOTP);
+router.post('/verify-email-otp', verifyEmailOTP);
 export default router;

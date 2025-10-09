@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import cloudinary from "../config/cloudinaryConfig.js";
 import validator from "validator";
-import nodemailer from "nodemailer";
+import sgMail from '@sendgrid/mail';
 
 export const register = async (req, res) => {
   try {
@@ -190,55 +190,99 @@ export const uploadProfilePhoto = async (req, res) => {
       .json({ success: false, message: "Upload failed", error: err.message });
   }
 };
-//forgot password mail sender
-const otpStore = {};
-export const sendMail = async (req, res) => {
+// --- Email Verification for Register ---
+export const sendVerificationOTP = async (req, res) => {
   try {
-    // get email from body
     const { email } = req.body;
 
-    // Validate input
     if (!validator.isEmail(email)) {
       return res.json({ success: false, message: "Invalid email" });
     }
-    // User exist or not
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.json({ success: false, message: "User already exists" });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    otpStore[email] = { otp, expires: Date.now() + 5 * 60 * 1000 };
+
+    const msg = {
+      to: email,
+      from: process.env.SENDGRID_VERIFIED_SENDER,
+      subject: "Verify Your Email for MedKnock Registration",
+      text: `Your verification OTP is: ${otp}`,
+      html: `<h3>Welcome to MedKnock!<br>Your verification OTP is: <strong>${otp}</strong></h3>`,
+    };
+
+    await sgMail.send(msg);
+    console.log(`Verification OTP sent to ${email}`);
+    res.json({ success: true, message: "Verification OTP sent to email" });
+  } catch (error) {
+    console.error("Email sending error:", error.message);
+    res.status(500).json({ success: false, message: "Email failed" });
+  }
+};
+
+export const verifyEmailOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const stored = otpStore[email];
+    if (!stored || stored.otp !== otp || stored.expires < Date.now()) {
+      return res.json({ success: false, message: "Invalid or expired OTP" });
+    }
+
+    delete otpStore[email]; // remove used OTP
+    res.json({ success: true, message: "Email verified successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Verification failed" });
+  }
+};
+
+//forgot password mail sender
+const otpStore = {};
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+export const sendMail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!validator.isEmail(email)) {
+      return res.json({ success: false, message: "Invalid email" });
+    }
+
     const user = await User.findOne({ email });
     if (!user) {
       return res.json({ success: false, message: "User not found" });
     }
 
-    // generate and store otp
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore[email] = { otp, expires: Date.now() + 5 * 60 * 1000 };
 
-    // Send OTP via nodemailer
-    // Configure transporter
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: `${process.env.SENDER_GMAIL}`,
-        pass: `${process.env.SENDER_PASS}`, // Use App Password
-      },
-    });
-
-    // Mail options
-    const mailOptions = {
-      from: `<${process.env.SENDER_GMAIL}>`,
-      to: `${email}`,
-      subject: "Your OTP Code",
+    // --- Start: SendGrid Logic ---
+    const msg = {
+      to: email,
+      from: process.env.SENDGRID_VERIFIED_SENDER, // Use your verified sender
+      subject: "Your OTP Code for MedKnock",
       text: `Your OTP is: ${otp}`,
-      html: `<h3>ThankYou for Visiting MedKnock <br> Your OTP is: <strong>${otp}</strong></h3>`,
+      html: `<h3>Thank you for visiting MedKnock.<br>Your OTP is: <strong>${otp}</strong></h3>`,
     };
 
-    // Send mail
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email sented:", info.messageId);
+    await sgMail.send(msg);
+    // --- End: SendGrid Logic ---
+
+    console.log(`OTP Email sent to ${email} via SendGrid`);
     res.json({ success: true, message: "OTP sent to email" });
+
   } catch (error) {
     console.error("Email sending error:", error.message);
-    res
-      .status(500)
-      .json({ success: false, message: "Email failed", error: error.message });
+    if (error.response) {
+      console.error(error.response.body); // Log detailed SendGrid error
+    }
+    res.status(500).json({ success: false, message: "Email failed" });
   }
 };
 
