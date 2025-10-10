@@ -20,6 +20,7 @@ export const getUserReports = async (req, res) => {
 };
 
 export const analyzeReport = async (req, res) => {
+  const userId = req.user?.id;
   try {
     if (!req.file) {
       return res
@@ -47,7 +48,7 @@ export const analyzeReport = async (req, res) => {
     const base64Data = req.file.buffer.toString("base64");
     const mimeType = req.file.mimetype;
 
-    
+    console.log("report file uploaded !");
     // Ask for a JSON object for easy parsing on the frontend.
     const prompt = `
             Analyze the attached medical report. Respond with a valid JSON object only.
@@ -80,7 +81,6 @@ export const analyzeReport = async (req, res) => {
         ],
       }),
     });
-
     if (!apiResponse.ok) {
       const errorData = await apiResponse.json();
       throw new Error(
@@ -89,6 +89,7 @@ export const analyzeReport = async (req, res) => {
         )}`
       );
     }
+    console.log("gemini respond");
 
     const data = await apiResponse.json();
    
@@ -102,7 +103,7 @@ export const analyzeReport = async (req, res) => {
 
     
     const newReport = await Report.create({
-      userId: req.user._id, 
+      userId, 
       fileName: req.file.originalname,
       cloudinaryUrl: cloudinaryUrl,
       summary: analysisText, 
