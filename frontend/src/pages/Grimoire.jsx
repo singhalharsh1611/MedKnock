@@ -2,15 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 // import { PotionCard } from '../components/PotionCard';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Plus,
-  Share,
-  BookOpen,
-  Sparkles,
-  EyeOff,
-  Eye,
-  User,
-} from "lucide-react";
+import { Plus, Share, BookOpen, Sparkles, EyeOff, Eye } from "lucide-react";
 import { ScheduleFormModal } from "../components/ScheduleFormModal";
 import { toast } from "sonner";
 import axios from "axios";
@@ -21,7 +13,7 @@ import Loader from "@/components/Loader";
 import ReportDocument from "./ShareableReport";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
 const Grimoire = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,34 +25,7 @@ const Grimoire = () => {
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState(null);
   const [reportData, setReportData] = useState(null);
-  const reportRef = useRef();
-  const navigate = useNavigate(); 
-  // Mock data
-  // const elixirs = [
-  //   {
-  //     id: '1',
-  //     pillName: 'Healing Potion',
-  //     dosage: '500mg',
-  //     times: ['8:00 AM', '2:00 PM'],
-  //     quantity: 28,
-  //   },
-  //   {
-  //     id: '2',
-  //     pillName: 'Strength Elixir',
-  //     dosage: '250mg',
-  //     times: ['9:00 AM'],
-  //     quantity: 5,
-  //     isRefillDue: true,
-  //   },
-  //   {
-  //     id: '3',
-  //     pillName: 'Wisdom Brew',
-  //     dosage: '100mg',
-  //     times: ['7:00 AM', '12:00 PM', '7:00 PM'],
-  //     quantity: 42,
-  //   },
-  // ];
-
+  const navigate = useNavigate();
 
   const handleAddElixir = () => {
     setEditingElixir(null);
@@ -73,18 +38,19 @@ const Grimoire = () => {
     setIsModalOpen(true);
   };
 
-const fetchAllData = async () => {
+  const fetchAllData = async () => {
     if (!token) return;
     setLoading(true);
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const [elixirsRes, overviewRes, dailyRes, medsRes] =
-        await Promise.all([
-          axios.get(`${backendUrl}/api/v1/schedules`, { headers }),
-          axios.get(`${backendUrl}/api/v1/stats/overview`, { headers }),
-          axios.get(`${backendUrl}/api/v1/stats/daily`, { headers }),
-          axios.get(`${backendUrl}/api/v1/stats/medications?limit=10`, { headers }),
-        ]);
+      const [elixirsRes, overviewRes, dailyRes, medsRes] = await Promise.all([
+        axios.get(`${backendUrl}/api/v1/schedules`, { headers }),
+        axios.get(`${backendUrl}/api/v1/stats/overview`, { headers }),
+        axios.get(`${backendUrl}/api/v1/stats/daily`, { headers }),
+        axios.get(`${backendUrl}/api/v1/stats/medications?limit=10`, {
+          headers,
+        }),
+      ]);
 
       setElixirs(elixirsRes.data.items || []);
       setStats({
@@ -126,48 +92,17 @@ const fetchAllData = async () => {
   const handleDeleteElixir = async (id) => {
     setLoading(true);
     try {
-      const response = await axios.delete(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      toast.success("Elixir Removed", {
-        description: "The elixir has been removed from your grimoire.",
+      await axios.delete(`${backendUrl}/api/v1/schedules/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      setElixirs((prev) => prev.filter((elixir) => elixir._id !== id));
+      toast.success("Elixir Removed");
+      await fetchAllData(); 
     } catch (error) {
       console.error("Delete failed:", error);
-      toast.error("server error");
-    } finally {
+      toast.error("Failed to delete schedule.");
       setLoading(false);
     }
   };
-
-  const fetchElixirs = async () => {
-    if (!token) return;
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/schedules`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setElixirs(response.data.items); //  backend returns { items, total }
-    } catch (err) {
-      console.error("Failed to fetch elixirs:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-  useEffect(() => {
-    fetchElixirs();
-  }, [token]);
 
   const countDosesByTime = (elixirs, startHour, endHour) => {
     let count = 0;
@@ -192,46 +127,23 @@ const fetchAllData = async () => {
   };
 
   const handleToggleActive = async (id) => {
-    setElixirs((prev) =>
-      prev.map((elixir) =>
-        elixir._id === id ? { ...elixir, isActive: !elixir.isActive } : elixir
-      )
-    );
     setLoading(true);
-    // const newState = !isActive;
     try {
-      const res = await axios.patch(
-        `${
-          import.meta.env.VITE_BACKEND_URL
-        }/api/v1/schedules/${id}/toggle-active`,
+      await axios.patch(
+        `${backendUrl}/api/v1/schedules/${id}/toggle-active`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      console.log(res);
-      toast.success("Schedule Updated", {
-        description: `${res.data?.message}`,
-      });
-      setElixirs(res.data.schedules);
-      // fetchElixirs(); // refresh list
+      toast.success("Schedule Updated");
+      await fetchAllData(); // This is the crucial step to refresh the page state
     } catch (err) {
       console.error(err);
-      toast("Error", {
-        description: err.message || "Failed to update schedule",
-        variant: "destructive",
-      });
-      // Rollback if API fails
-      setElixirs((prev) =>
-        prev.map((elixir) =>
-          elixir._id === id ? { ...elixir, isActive: !elixir.isActive } : elixir
-        )
-      );
-    } finally {
+      toast.error("Failed to update schedule.");
       setLoading(false);
     }
   };
-
   return (
     <>
       {loading && <Loader />}
@@ -251,19 +163,30 @@ const fetchAllData = async () => {
           </div>
 
           <div className="flex gap-3">
-            {reportData ? (
-                    <PDFDownloadLink
-                        document={<ReportDocument data={reportData} />}
-                        fileName={`MedKnock_Report_${new Date(2025, 9, 11).toISOString().split("T")[0]}.pdf`}
-                        className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-2"
-                    >
-                        {({ loading }) => (loading ? "Generating..." : <><Share className="h-4 w-4" /> Share Report</>)}
-                    </PDFDownloadLink>
-                ) : (
-                    <Button variant="outline" disabled>
-                        <Share className="h-4 w-4 mr-2" /> Generating Report...
-                    </Button>
-                )}
+            {reportData && !loading ? (
+              <PDFDownloadLink
+                key={reportData?.elixirs?.length} 
+                document={<ReportDocument data={reportData} />}
+                fileName={`MedKnock_Report_${
+                  new Date().toISOString().split("T")[0]
+                }.pdf`}
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-2"
+              >
+                {({ loading }) =>
+                  loading ? (
+                    "Generating..."
+                  ) : (
+                    <>
+                      <Share className="h-4 w-4" /> Share Report
+                    </>
+                  )
+                }
+              </PDFDownloadLink>
+            ) : (
+              <Button variant="outline" disabled>
+                <Share className="h-4 w-4 mr-2" /> Generating Report...
+              </Button>
+            )}
             <Button
               onClick={handleAddElixir}
               className="magical-button flex items-center gap-2"
@@ -271,7 +194,10 @@ const fetchAllData = async () => {
               <Plus className="h-4 w-4" />
               Add New Elixir
             </Button>
-            <Button onClick={() => navigate("/add-by-image")} className="magical-button flex items-center gap-2">
+            <Button
+              onClick={() => navigate("/add-by-image")}
+              className="magical-button flex items-center gap-2"
+            >
               <Plus className="h-4 w-4" />
               Add By Prescription Page
             </Button>
@@ -428,10 +354,9 @@ const fetchAllData = async () => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           editingId={editingElixir}
-          onSuccess={() => fetchElixirs()}
+          onSuccess={fetchAllData}
         />
       </div>
-     
     </>
   );
 };
