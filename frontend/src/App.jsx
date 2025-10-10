@@ -18,7 +18,6 @@ import StatsPage from "./pages/StatsPage";
 import GoogleSuccess from "./components/GoogleSucess";
 import LandingPage from "./pages/LandingPage";
 import { ReportsPage } from "./pages/ReportsPage";
-
 import Last7DaysLogs from "./pages/Last7DaysLogs";
 
 function App() {
@@ -28,10 +27,10 @@ function App() {
   return (
     <>
       <Routes>
-        {/* 🌐 Public routes */}
+        {/* Public routes */}
         <Route
           path="/"
-          element={token ? <Navigate to="/dashboard" /> : <LandingPage/>}
+          element={token ? <Navigate to="/dashboard" /> : <LandingPage />}
         />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -39,34 +38,26 @@ function App() {
         <Route path="/google-success" element={<GoogleSuccess />} />
         <Route path="/report/:id" element={<ShareableReport />} />
 
-        {/* 🔒 Protected Routes */}
+        {/* Protected Routes */}
         {token && (
           <Route path="/" element={<Layout />}>
-            <Route index element={<Dashboard />} />
+            {/* The index route automatically renders at the parent's path ("/") */}
+            <Route index element={<Dashboard />} /> 
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="grimoire" element={<Grimoire />} />
             <Route path="profile" element={<Profile />} />
             <Route path="compare" element={<Compare />} />
             <Route path="stats" element={<StatsPage />} />
             <Route path="reports" element={<ReportsPage />} />
+            <Route path="logs" element={<Last7DaysLogs />} />
           </Route>
         )}
 
-        {/* 🚫 Fallback */}
-        {/* protected-App layout with default dashboard */}
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="grimoire" element={<Grimoire />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="compare" element={<Compare />} />
-          <Route path="stats" element={<StatsPage />} />
-          <Route path="logs" element={<Last7DaysLogs />} />
-        </Route>
+        {/* This route will catch any path that wasn't matched above */}
         <Route path="*" element={<NotFound />} />
       </Routes>
 
-      {/* 💬 Floating Chatbot */}
+      {/* Floating Chatbot */}
       {token && !isChatbotOpen && (
         <Button
           onClick={() => setIsChatbotOpen(!isChatbotOpen)}
@@ -77,7 +68,7 @@ function App() {
         </Button>
       )}
 
-      {/* 🤖 Chatbot Window */}
+      {/* Chatbot Window */}
       {token && (
         <ChatbotWindow
           isOpen={isChatbotOpen}

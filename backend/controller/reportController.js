@@ -7,7 +7,7 @@ dotenv.config();
 
 export const getUserReports = async (req, res) => {
   try {
-    const reports = await Report.find({ userId: req.user._id }).sort({
+    const reports = await Report.find({ userId: req.user.id }).sort({
       createdAt: -1,
     });
     res.status(200).json({ success: true, reports });
@@ -134,7 +134,7 @@ export const deleteReport = async (req, res) => {
     }
 
     
-    if (report.userId.toString() !== req.user._id.toString()) {
+    if (report.userId.toString() !== req.user.id.toString()) {
       return res
         .status(401)
         .json({ success: false, message: "Not authorized" });
