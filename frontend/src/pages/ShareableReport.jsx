@@ -1,120 +1,217 @@
 import React from 'react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, TrendingUp, Award, Sparkles } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { Page, Text, View, Document, StyleSheet, Link } from '@react-pdf/renderer';
 
-const ShareableReport = () => {
-  // Mock data for the report
-  const reportData = {
-    userName: "Master Alchemist",
-    currentStreak: 14,
-    weeklyAverage: 95,
-    totalElixirs: 3,
-    adherenceData: [
-      { day: 'Mon', rate: 95 },
-      { day: 'Tue', rate: 100 },
-      { day: 'Wed', rate: 85 },
-      { day: 'Thu', rate: 100 },
-      { day: 'Fri', rate: 90 },
-      { day: 'Sat', rate: 100 },
-      { day: 'Sun', rate: 95 },
-    ]
-  };
+// styles for the PDF document
+const styles = StyleSheet.create({
+  page: {
+    flexDirection: 'column',
+    backgroundColor: 'hsl(236, 25%, 8%)',
+    color: 'hsl(45, 35%, 95%)', 
+    padding: 35,
+    fontFamily: 'Helvetica',
+  },
+  header: {
+    textAlign: 'center',
+    marginBottom: 25,
+  },
+  title: {
+    fontSize: 25,
+    fontFamily: 'Helvetica-Bold',
+    color: 'hsl(210, 85%, 65%)', 
+  },
+  subtitle: {
+    fontSize: 12,
+    color: 'hsl(45, 10%, 65%)', 
+  },
+  // Stats Cards
+  statsContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+  },
+  statCard: {
+    backgroundColor: 'hsl(236, 20%, 12%)',
+    borderWidth: 1,
+    borderColor: 'hsl(236, 15%, 25%)',
+    borderRadius: 8,
+    padding: 12,
+    flex: 1,
+    marginHorizontal: 5,
+    textAlign: 'center',
+  },
+  statValue: {
+    fontSize: 22,
+    fontFamily: 'Helvetica-Bold',
+  },
+  statLabel: {
+    fontSize: 10,
+    color: 'hsl(45, 10%, 65%)',
+    marginTop: 2,
+  },
+  // Section container
+  section: {
+    backgroundColor: 'hsl(236, 20%, 12%)',
+    borderWidth: 1,
+    borderColor: 'hsl(236, 15%, 25%)',
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 15,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    marginBottom: 10,
+    fontFamily: 'Helvetica-Bold',
+    color: 'hsl(260, 70%, 70%)', 
+  },
+  // Two-column layout for tables
+  columnLayout: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  column: {
+    width: '48%',
+  },
+  // Table Styles
+  table: {
+    width: '100%',
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: 'hsl(260, 70%, 70%)',
+    paddingBottom: 4,
+    marginBottom: 4,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 4,
+  },
+  tableRowAlternate: {
+    backgroundColor: 'hsl(236, 15%, 20%)', 
+    borderRadius: 3,
+  },
+  colHeader: {
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
+  },
+  tableCell: {
+    fontSize: 9,
+  },
+  // Footer
+  footer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 35,
+    right: 35,
+    textAlign: 'center',
+    fontSize: 9,
+    color: 'hsl(45, 10%, 65%)',
+  },
+  brandText: {
+    color: 'hsl(210, 85%, 65%)',
+    textDecoration: 'none',
+  }
+});
 
-  return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <Card className="grimoire-header mb-8">
-          <div className="flex items-center justify-center gap-4">
-            <Sparkles className="h-12 w-12 text-white elixir-glow" />
-            <div className="text-center">
-              <h1 className="text-3xl font-bold text-white">Wellness Progress Report</h1>
-              <p className="text-white/80">{reportData.userName}'s Alchemical Journey</p>
-            </div>
-          </div>
-        </Card>
+// The PDF Document Component
+const ReportDocument = ({ data }) => {
+    if (!data || !data.stats) return null;
+    
+    const { userName, elixirs, stats } = data;
+    const { overview, daily, meds, adherenceData } = stats;
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="streak-counter">
-            <div className="flex items-center justify-center gap-3">
-              <Award className="h-8 w-8" />
-              <div>
-                <p className="text-3xl font-bold">{reportData.currentStreak}</p>
-                <p className="text-sm opacity-90">Day Streak</p>
-              </div>
-            </div>
-          </Card>
+    return (
+        <Document>
+            <Page size="A4" style={styles.page}>
+                <View style={styles.header}>
+                    <Text style={styles.title}>Wellness Progress Report</Text>
+                    <Text style={styles.subtitle}>Prepared for: {userName}</Text>
+                </View>
 
-          <Card className="p-6 bg-gradient-to-br from-magical-blue/20 to-magical-purple/20">
-            <div className="flex items-center gap-3">
-              <TrendingUp className="h-6 w-6 text-magical-blue" />
-              <div>
-                <p className="text-3xl font-bold text-foreground">{reportData.weeklyAverage}%</p>
-                <p className="text-sm text-muted-foreground">Weekly Average</p>
-              </div>
-            </div>
-          </Card>
+                {/* Stats Cards */}
+                <View style={styles.statsContainer}>
+                    <View style={styles.statCard}><Text style={[styles.statValue, { color: '#4ade80' }]}>{overview?.totals?.taken ?? 0}</Text><Text style={styles.statLabel}>Doses Taken</Text></View>
+                    <View style={styles.statCard}><Text style={[styles.statValue, { color: '#facc15' }]}>{overview?.totals?.missed ?? 0}</Text><Text style={styles.statLabel}>Doses Missed</Text></View>
+                    <View style={styles.statCard}><Text style={[styles.statValue, { color: '#60a5fa' }]}>{overview?.adherence?.toFixed(1) ?? 0}%</Text><Text style={styles.statLabel}>Adherence</Text></View>
+                    <View style={styles.statCard}><Text style={[styles.statValue, { color: '#a78bfa' }]}>{elixirs?.length ?? 0}</Text><Text style={styles.statLabel}>Active Meds</Text></View>
+                </View>
 
-          <Card className="p-6 bg-gradient-to-br from-magical-green/20 to-magical-gold/20">
-            <div className="flex items-center gap-3">
-              <Calendar className="h-6 w-6 text-magical-green" />
-              <div>
-                <p className="text-3xl font-bold text-foreground">{reportData.totalElixirs}</p>
-                <p className="text-sm text-muted-foreground">Active Elixirs</p>
-              </div>
-            </div>
-          </Card>
-        </div>
+                {/* Medication Schedule */}
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Current Medication Schedule</Text>
+                  {elixirs.map((elixir, index) => (
+                      <View key={index} style={[styles.tableRow, index % 2 === 1 && styles.tableRowAlternate]}>
+                          <Text style={[styles.tableCell, { flex: 2, fontFamily: 'Helvetica-Bold' }]}>{elixir.pillName}</Text>
+                          <Text style={[styles.tableCell, { flex: 2 }]}>Dosage: {elixir.dosage}</Text>
+                          <Text style={[styles.tableCell, { flex: 3 }]}>Times: {elixir.times.join(', ')}</Text>
+                      </View>
+                  ))}
+                </View>
 
-        {/* Adherence Chart */}
-        <Card className="wellness-chart mb-8">
-          <h2 className="text-2xl font-bold text-white mb-6">7-Day Adherence Trend</h2>
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={reportData.adherenceData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis dataKey="day" stroke="white" />
-              <YAxis stroke="white" />
-              <Line
-                type="monotone"
-                dataKey="rate"
-                stroke="white"
-                strokeWidth={4}
-                dot={{ fill: 'white', strokeWidth: 2, r: 8 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
+                {/* Data Tables in a Two-Column Layout */}
+                <View style={styles.columnLayout}>
+                  <View style={styles.column}>
+                      <View style={styles.section}>
+                          <Text style={styles.sectionTitle}>Daily Doses</Text>
+                          <View style={styles.table}>
+                              <View style={styles.tableHeader}>
+                                  <Text style={[styles.colHeader, { width: '50%' }]}>Date</Text>
+                                  <Text style={[styles.colHeader, { width: '25%', textAlign: 'center' }]}>Taken</Text>
+                                  <Text style={[styles.colHeader, { width: '25%', textAlign: 'center' }]}>Missed</Text>
+                              </View>
+                              {daily.map((day, index) => (
+                                  <View key={index} style={[styles.tableRow, index % 2 === 1 && styles.tableRowAlternate]}>
+                                      <Text style={[styles.tableCell, { width: '50%' }]}>{day.date}</Text>
+                                      <Text style={[styles.tableCell, { width: '25%', textAlign: 'center' }]}>{day.taken}</Text>
+                                      <Text style={[styles.tableCell, { width: '25%', textAlign: 'center' }]}>{day.missed}</Text>
+                                  </View>
+                              ))}
+                          </View>
+                      </View>
+                  </View>
 
-        {/* Achievement Badges */}
-        <Card className="p-8 text-center">
-          <h2 className="text-2xl font-semibold text-foreground mb-6">Achievements Unlocked</h2>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Badge className="px-4 py-2 bg-magical-purple text-white text-lg">
-              🔥 Week Warrior
-            </Badge>
-            <Badge className="px-4 py-2 bg-magical-gold text-white text-lg">
-              ⭐ Consistency Master
-            </Badge>
-            <Badge className="px-4 py-2 bg-magical-green text-white text-lg">
-              🎯 Perfect Week
-            </Badge>
-          </div>
+                  <View style={styles.column}>
+                      <View style={styles.section}>
+                          <Text style={styles.sectionTitle}>Adherence Trend</Text>
+                          <View style={styles.table}>
+                              <View style={styles.tableHeader}>
+                                  <Text style={[styles.colHeader, { width: '60%' }]}>Date</Text>
+                                  <Text style={[styles.colHeader, { width: '40%', textAlign: 'right' }]}>Adherence</Text>
+                              </View>
+                              {adherenceData.map((item, index) => (
+                                  <View key={index} style={[styles.tableRow, index % 2 === 1 && styles.tableRowAlternate]}>
+                                      <Text style={[styles.tableCell, { width: '60%' }]}>{item.date}</Text>
+                                      <Text style={[styles.tableCell, { width: '40%', textAlign: 'right' }]}>{item.adherence}%</Text>
+                                  </View>
+                              ))}
+                          </View>
+                      </View>
+                  </View>
+                </View>
 
-          <div className="mt-8 text-center">
-            <p className="text-muted-foreground mb-4">
-              This report was generated by MedKnock - Your Magical Medication Reminder
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Created on {new Date().toLocaleDateString()}
-            </p>
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Per-Medication Performance</Text>
+                    <View style={styles.table}>
+                         <View style={styles.tableHeader}>
+                            <Text style={[styles.colHeader, { width: '50%' }]}>Medication</Text>
+                            <Text style={[styles.colHeader, { width: '25%', textAlign: 'center' }]}>Taken</Text>
+                            <Text style={[styles.colHeader, { width: '25%', textAlign: 'center' }]}>Missed</Text>
+                        </View>
+                        {meds.map((med, index) => (
+                            <View key={index} style={[styles.tableRow, index % 2 === 1 && styles.tableRowAlternate]}>
+                                <Text style={[styles.tableCell, { width: '50%' }]}>{med._id}</Text>
+                                <Text style={[styles.tableCell, { width: '25%', textAlign: 'center' }]}>{med.taken}</Text>
+                                <Text style={[styles.tableCell, { width: '25%', textAlign: 'center' }]}>{med.missed}</Text>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+
+                <Text style={styles.footer} fixed render={({ pageNumber, totalPages }) => (
+                    `Page ${pageNumber} of ${totalPages}  |  Generated by MedKnock`
+                )} />
+            </Page>
+        </Document>
+    );
 };
 
-export default ShareableReport;
+export default ReportDocument;

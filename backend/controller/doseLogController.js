@@ -133,7 +133,7 @@ export const getLast7DaysDoseLogs = async (req, res, next) => {
     startDate.setDate(endDate.getDate() - 5);
 
     // Fetch dose logs from last 7 days
-    console.log(userId);
+    
     const logs = await DoseLog.find({
       userId,
       timestamp: { $gte: startDate, $lte: endDate },

@@ -212,7 +212,7 @@ export const createSchedule = async (req, res, next) => {
 export const getSchedules = async (req, res, next) => {
   try {
     const userId = req.user?.id;
-    console.log(req.user);
+    
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
     const user = await User.findById(userId).select("currentStreak");
