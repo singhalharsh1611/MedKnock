@@ -21,6 +21,7 @@ import Loader from "@/components/Loader";
 import ReportDocument from "./ShareableReport";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
+import { useNavigate } from 'react-router-dom';
 
 const Grimoire = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,6 +34,33 @@ const Grimoire = () => {
   const [stats, setStats] = useState(null);
   const [reportData, setReportData] = useState(null);
   const reportRef = useRef();
+  const navigate = useNavigate(); 
+  // Mock data
+  // const elixirs = [
+  //   {
+  //     id: '1',
+  //     pillName: 'Healing Potion',
+  //     dosage: '500mg',
+  //     times: ['8:00 AM', '2:00 PM'],
+  //     quantity: 28,
+  //   },
+  //   {
+  //     id: '2',
+  //     pillName: 'Strength Elixir',
+  //     dosage: '250mg',
+  //     times: ['9:00 AM'],
+  //     quantity: 5,
+  //     isRefillDue: true,
+  //   },
+  //   {
+  //     id: '3',
+  //     pillName: 'Wisdom Brew',
+  //     dosage: '100mg',
+  //     times: ['7:00 AM', '12:00 PM', '7:00 PM'],
+  //     quantity: 42,
+  //   },
+  // ];
+
 
   const handleAddElixir = () => {
     setEditingElixir(null);
@@ -242,6 +270,10 @@ const fetchAllData = async () => {
             >
               <Plus className="h-4 w-4" />
               Add New Elixir
+            </Button>
+            <Button onClick={() => navigate("/add-by-image")} className="magical-button flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add By Prescription Page
             </Button>
           </div>
         </div>

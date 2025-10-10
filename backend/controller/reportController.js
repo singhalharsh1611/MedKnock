@@ -150,3 +150,48 @@ export const deleteReport = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+// Controller to change the report file name
+export const changeReportFileName = async (req, res) => {
+  try {
+    const { id } = req.params; // Report ID from URL
+    const { newFileName } = req.body; // New name from request body
+
+    if (!newFileName || newFileName.trim() === "") {
+      return res
+        .status(400)
+        .json({ success: false, message: "New file name is required" });
+    }
+
+    const report = await Report.findById(id);
+
+    if (!report) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Report not found" });
+    }
+
+    // Check if user owns this report
+    if (report.userId.toString() !== req.user.id.toString()) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized" });
+    }
+
+    // Update and save new file name
+    report.fileName = newFileName.trim();
+    await report.save();
+
+    res.status(200).json({
+      success: true,
+      message: "File name updated successfully",
+      report,
+    });
+  } catch (err) {
+    console.error("Change File Name Error:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to update file name" });
+  }
+};
+
