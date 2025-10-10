@@ -143,7 +143,7 @@ export default function StatsPage() {
                 </div>
             </section>
 
-            {/* ✅ Ask AI Summary Button & Box */}
+            {/* Ask AI Summary Button & Box */}
             <section className="text-center space-y-4">
                 <button
                     onClick={handleAskAISummary}
