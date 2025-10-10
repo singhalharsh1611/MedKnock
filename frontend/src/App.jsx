@@ -20,6 +20,8 @@ import LandingPage from "./pages/LandingPage";
 import { ReportsPage } from "./pages/ReportsPage";
 
 import Last7DaysLogs from "./pages/Last7DaysLogs";
+import AddByImage from "./pages/AddByImage";
+
 
 function App() {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
@@ -49,6 +51,7 @@ function App() {
             <Route path="compare" element={<Compare />} />
             <Route path="stats" element={<StatsPage />} />
             <Route path="reports" element={<ReportsPage />} />
+            <Route path="add-by-image" element={<AddByImage />} />
           </Route>
         )}
 

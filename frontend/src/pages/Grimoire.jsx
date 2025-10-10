@@ -5,6 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Plus, Share, BookOpen, Sparkles, EyeOff, Eye } from 'lucide-react';
 import { ScheduleFormModal } from '../components/ScheduleFormModal';
 import { toast } from "sonner";
+import { useNavigate } from 'react-router-dom';
+
 
 
 
@@ -26,7 +28,7 @@ const Grimoire = () => {
   const [elixirs, setElixirs] = useState([]);
   const [showOnlyActive, setShowOnlyActive] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const navigate = useNavigate(); 
   // Mock data
   // const elixirs = [
   //   {
@@ -215,6 +217,10 @@ const Grimoire = () => {
             <Button onClick={handleAddElixir} className="magical-button flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Add New Elixir
+            </Button>
+            <Button onClick={() => navigate("/add-by-image")} className="magical-button flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add By Prescription Page
             </Button>
           </div>
         </div>
