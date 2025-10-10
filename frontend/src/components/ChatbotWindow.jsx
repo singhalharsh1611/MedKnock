@@ -7,11 +7,14 @@ import { X, Send, Bot, User, Mic } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
+import { Maximize, Minimize } from 'lucide-react';
 
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
 export const ChatbotWindow = ({ isOpen, onClose }) => {
   const { token } = useAuth();
+  const [isMaximized, setIsMaximized] = useState(false);
+
   const [messages, setMessages] = useState([
     {
       id: '1',
@@ -126,16 +129,34 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <Card className="fixed bottom-4 right-4 w-[90vw] max-w-md h-[80vh] flex flex-col shadow-2xl border-2 border-magical-purple/30 bg-card/95 backdrop-blur-sm sm:w-96 md:h-[500px]">
+    <>
+    {isMaximized && (
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={() => setIsMaximized(false)} />
+    )}
+<Card
+  className={`
+    fixed bottom-4 right-4 w-[90vw] max-w-none h-[80vh] flex flex-col shadow-2xl border-2 border-magical-purple/30 bg-card/95 backdrop-blur-sm transition-all duration-300 z-50
+    ${isMaximized ? 'w-[80vw] h-[80vh] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg' : 'sm:w-96 md:h-[500px]'}
+  `}
+>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-magical-purple/20 to-magical-blue/20 rounded-t-lg">
         <div className="flex items-center gap-2">
           <Bot className="h-5 w-5 text-magical-purple" />
           <h3 className="font-semibold text-foreground">AI Wellness Assistant</h3>
         </div>
-        <Button variant="ghost" size="sm" onClick={onClose}>
+        <div><Button variant="ghost" size="sm" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsMaximized((prev) => !prev)}
+        >
+          {isMaximized ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+        </Button></div>
+        
+
       </div>
 
       {/* Messages */}
@@ -202,5 +223,6 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
         </div>
       </div>
     </Card>
+    </>
   );
 };
