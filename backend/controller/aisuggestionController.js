@@ -72,8 +72,15 @@ export const getAISuggestions = async (req, res) => {
       const m = medsMap[schedule.pillName];
       if (log.status === "taken") m.taken++;
       if (log.status === "missed") m.missed++;
+
+      // to optimise n**2 to n ,  we can create map of schedule then find by log sch id
+      // const scheduleMap = Object.fromEntries(schedules.map(s => [s._id.toString(), s]));
+      // const schedule = scheduleMap[log.scheduleId?.toString()];
+
     }
     const meds = Object.entries(medsMap).map(([pillName, v]) => ({
+      // Converts the medicine map into an array.
+      // Computes adherence percentage per medicine.
       pillName,
       ...v,
       adherence:
@@ -81,6 +88,13 @@ export const getAISuggestions = async (req, res) => {
           ? ((v.taken / (v.taken + v.missed)) * 100).toFixed(1)
           : "0.0",
     }));
+
+    //     [
+    //   { pillName: "Atorvastatin", taken: 12, missed: 3, risk: 8, adherence: "80.0" },
+    //   { pillName: "Paracetamol", taken: 7, missed: 0, risk: 4, adherence: "100.0" },
+    //   { pillName: "Cetrizine", taken: 3, missed: 2, risk: 2, adherence: "60.0" }
+    // ]
+
 
     // 5️⃣ Streak (simplified: consecutive taken days)
     let streak = 0;
@@ -98,20 +112,20 @@ User 7-Day Adherence Summary:
 - Current streak: ${streak} day(s)
 - Daily trend:
 ${dailySeries
-  .map(
-    (d) =>
-      `  • ${d.date}: ${d.taken} taken, ${d.missed} missed (Adherence: ${d.adherence}%)`
-  )
-  .join("\n")}
+        .map(
+          (d) =>
+            `  • ${d.date}: ${d.taken} taken, ${d.missed} missed (Adherence: ${d.adherence}%)`
+        )
+        .join("\n")}
 - Per medication:
 ${meds
-  .map(
-    (m) =>
-      `  • ${m.pillName}: ${m.taken} taken, ${m.missed} missed (Adherence: ${m.adherence}%, Risk: ${m.risk})`
-  )
-  .join("\n")}
+        .map(
+          (m) =>
+            `  • ${m.pillName}: ${m.taken} taken, ${m.missed} missed (Adherence: ${m.adherence}%, Risk: ${m.risk})`
+        )
+        .join("\n")}
 `;
-
+    // This builds a structured prompt that tells Gemini:
     const prompt = `
 You are an expert digital medication coach.
 
@@ -129,6 +143,7 @@ Respond in the format:
 `;
 
     // 7️⃣ Call Gemini API
+
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
     const response = await fetch(url, {
       method: "POST",
@@ -139,8 +154,10 @@ Respond in the format:
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`Gemini API error ${response.status}: ${errorText}`);
     }
+
 
     const data = await response.json();
     const text =
