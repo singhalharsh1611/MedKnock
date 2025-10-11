@@ -26,9 +26,9 @@ export const Layout = () => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    // THE FIX IS HERE: Changed min-h-screen to h-screen and added overflow-hidden
+  
     <div className="flex h-screen overflow-hidden bg-muted/40">
-      {/* 1. Sidebar (will now remain fixed) */}
+      {/* Sidebar */}
       <aside
         className={`bg-background border-r flex flex-col z-40 transition-all duration-300 ease-in-out ${
           isSidebarOpen ? 'w-64' : 'w-16'
@@ -96,7 +96,7 @@ export const Layout = () => {
         </div>
       </aside>
 
-      {/* 2. Main Content Area (will now scroll independently) */}
+      {/*  Main Content Area */}
       <main className="flex-1 flex flex-col">
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
             <Outlet />

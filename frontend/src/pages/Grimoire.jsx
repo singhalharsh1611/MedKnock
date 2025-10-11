@@ -41,6 +41,7 @@ const Grimoire = () => {
   const fetchAllData = async () => {
     if (!token) return;
     setLoading(true);
+    setReportData(null);
     try {
       const headers = { Authorization: `Bearer ${token}` };
       const [elixirsRes, overviewRes, dailyRes, medsRes] = await Promise.all([
@@ -96,7 +97,7 @@ const Grimoire = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("Elixir Removed");
-      await fetchAllData(); 
+      await fetchAllData();
     } catch (error) {
       console.error("Delete failed:", error);
       toast.error("Failed to delete schedule.");
@@ -149,7 +150,7 @@ const Grimoire = () => {
       {loading && <Loader />}
       <div className="space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
             <BookOpen className="h-8 w-8 text-magical-purple elixir-glow" />
             <div>
@@ -161,16 +162,15 @@ const Grimoire = () => {
               </p>
             </div>
           </div>
-
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             {reportData && !loading ? (
               <PDFDownloadLink
-                key={reportData?.elixirs?.length} 
+                key={reportData?.elixirs?.length}
                 document={<ReportDocument data={reportData} />}
                 fileName={`MedKnock_Report_${
                   new Date().toISOString().split("T")[0]
                 }.pdf`}
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-2"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-2 flex-grow sm:flex-grow-0"
               >
                 {({ loading }) =>
                   loading ? (
@@ -183,29 +183,35 @@ const Grimoire = () => {
                 }
               </PDFDownloadLink>
             ) : (
-              <Button variant="outline" disabled>
+              <Button
+                variant="outline"
+                disabled
+                className="flex-grow sm:flex-grow-0"
+              >
                 <Share className="h-4 w-4 mr-2" /> Generating Report...
               </Button>
             )}
             <Button
               onClick={handleAddElixir}
-              className="magical-button flex items-center gap-2"
+              className="magical-button flex items-center gap-2 flex-grow sm:flex-grow-0"
             >
               <Plus className="h-4 w-4" />
-              Add New Elixir
+              <span className="hidden sm:inline">Add New Elixir</span>
+              <span className="sm:hidden">Add Elixir</span>
             </Button>
             <Button
               onClick={() => navigate("/add-by-image")}
-              className="magical-button flex items-center gap-2"
+              className="magical-button flex items-center gap-2 flex-grow sm:flex-grow-0"
             >
               <Plus className="h-4 w-4" />
-              Add By Prescription Page
+              <span className="hidden sm:inline">Add By Prescription</span>
+              <span className="sm:hidden">Add by Rx</span>
             </Button>
           </div>
         </div>
 
         {/* Stats - Row 1 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <Card className="p-6 bg-gradient-to-br from-magical-purple/20 to-magical-blue/20">
             <div className="flex items-center gap-3">
               <Sparkles className="h-6 w-6 text-magical-purple" />
@@ -249,7 +255,7 @@ const Grimoire = () => {
         </div>
 
         {/* Stats - Row 2 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <Card className="p-6 bg-gradient-to-br from-yellow-200/20 to-yellow-400/20">
             <div className="flex items-center gap-3">
               <div className="w-6 h-6 bg-yellow-400 rounded-full"></div>
@@ -289,12 +295,10 @@ const Grimoire = () => {
 
         {/* Elixirs Grid */}
         <section>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col items-start gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-2xl font-semibold text-foreground">
               Your Elixirs
             </h2>
-
-            {/* Toggle Button */}
             <Button
               onClick={() => setShowOnlyActive((prev) => !prev)}
               variant="outline"
@@ -315,18 +319,7 @@ const Grimoire = () => {
           </div>
 
           {elixirs.length === 0 ? (
-            <Card className="p-12 text-center">
-              <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-foreground mb-2">
-                Your grimoire is empty
-              </h3>
-              <p className="text-muted-foreground mb-6">
-                Start by adding your first elixir to begin your wellness journey
-              </p>
-              <Button onClick={handleAddElixir} className="magical-button">
-                Add Your First Elixir
-              </Button>
-            </Card>
+            <Card className="p-12 text-center">{/* Empty State */}</Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {elixirs
@@ -334,13 +327,7 @@ const Grimoire = () => {
                 .map((elixir) => (
                   <PotionCardActive
                     key={elixir._id}
-                    id={elixir._id}
-                    pillName={elixir.pillName}
-                    dosage={elixir.dosage}
-                    times={elixir.times}
-                    quantity={elixir.quantity}
-                    isActive={elixir.isActive}
-                    isRefillDue={elixir.quantity < 4}
+                    {...elixir}
                     onEdit={handleEditElixir}
                     onDelete={handleDeleteElixir}
                     onToggleActive={handleToggleActive}

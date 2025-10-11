@@ -104,87 +104,82 @@ const Dashboard = () => {
 
   return (
     <>
-    {loading && <Loader/>}
-    <div className="space-y-8">
-      {/* Welcome Section */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          Welcome back, {user?.firstName || "Alchemist"}! ✨
-        </h1>
-        <p className="text-muted-foreground">
-          Your magical health journey continues today
-        </p>
-      </div>
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Current Streak */}
-        <Card className="streak-counter">
-          <div className="flex items-center justify-center gap-3">
-            <Flame className="h-8 w-8" />
-            <div>
-              <p className="text-2xl font-bold">{currentStreak} Days</p>
-              <p className="text-sm opacity-90">Current Streak</p>
-            </div>
-          </div>
-        </Card>
-
-        {/* Today's Progress */}
-        <Card className="p-6 bg-gradient-to-br from-magical-blue/20 to-magical-purple/20">
-          <div className="flex items-center gap-3">
-            <Calendar className="h-6 w-6 text-magical-blue" />
-            <div>
-              <p className="text-2xl font-bold text-foreground">{takenDoses}/{totalDoses}</p>
-              <p className="text-sm text-muted-foreground">Elixirs Today</p>
-            </div>
-          </div>
-        </Card>
-
-        {/* Weekly Average */}
-        <Card className="p-6 bg-gradient-to-br from-magical-green/20 to-magical-gold/20">
-          <div className="flex items-center gap-3">
-            <TrendingUp className="h-6 w-6 text-magical-green" />
-            <div>
-              <p className="text-2xl font-bold text-foreground">95%</p>
-              <p className="text-sm text-muted-foreground">Weekly Average</p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Today's Elixirs */}
-      <section>
-        <div className="flex items-center gap-3 mb-6">
-          <h2 className="text-2xl font-semibold text-foreground">
-            Today's Elixirs
-          </h2>
-          <Badge
-            variant="outline"
-            className="text-magical-purple border-magical-purple"
-          >
-            {todaysElixirs.length} due today
-          </Badge>
+      {loading && <Loader />}
+      <div className="space-y-8">
+        {/* Welcome Section */}
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Welcome back, {user?.firstName || "Alchemist"}! ✨
+          </h1>
+          <p className="text-muted-foreground">
+            Your magical health journey continues today
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {todaysElixirs
-          .filter((elixir) => (elixir.isActive))
-          .map((elixir) => (
-            <PotionCard
-              key={elixir._id}
-              id={elixir._id}
-              {...elixir}
-              isRefillDue={elixir.quantity < 4}
-              onLogTaken={()=>handleLogToken(elixir._id)}
-              onEdit={(id) => console.log("Edit:", id)}
-              onDelete={(id) => console.log("Delete:", id)}
-            />
-          ))}
-        </div>
-      </section>
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Today's Progress */}
+          <Card className="p-6 bg-gradient-to-br from-magical-blue/20 to-magical-purple/20">
+            <div className="flex items-center gap-3">
+              <Calendar className="h-6 w-6 text-magical-blue" />
+              <div>
+                <p className="text-2xl font-bold text-foreground">
+                  {takenDoses}/{totalDoses}
+                </p>
+                <p className="text-sm text-muted-foreground">Elixirs Today</p>
+              </div>
+            </div>
+          </Card>
 
-      {/* Wellness Rate Chart */}
-      {/* <section>
+          {/* Weekly Average */}
+          <Card className="p-6 bg-gradient-to-br from-magical-green/20 to-magical-gold/20">
+            <div className="flex items-center gap-3">
+              <TrendingUp className="h-6 w-6 text-magical-green" />
+              <div>
+                <p className="text-2xl font-bold text-foreground">
+                  {totalDoses > 0
+                    ? `${((takenDoses / totalDoses) * 100).toFixed(1)}%`
+                    : "0%"}
+                </p>
+                <p className="text-sm text-muted-foreground">Weekly Average</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Today's Elixirs */}
+        <section>
+          <div className="flex items-center gap-3 mb-6">
+            <h2 className="text-2xl font-semibold text-foreground">
+              Today's Elixirs
+            </h2>
+            <Badge
+              variant="outline"
+              className="text-magical-purple border-magical-purple"
+            >
+              {todaysElixirs.length} due today
+            </Badge>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {todaysElixirs
+              .filter((elixir) => elixir.isActive)
+              .map((elixir) => (
+                <PotionCard
+                  key={elixir._id}
+                  id={elixir._id}
+                  {...elixir}
+                  isRefillDue={elixir.quantity < 4}
+                  onLogTaken={() => handleLogToken(elixir._id)}
+                  onEdit={(id) => console.log("Edit:", id)}
+                  onDelete={(id) => console.log("Delete:", id)}
+                />
+              ))}
+          </div>
+        </section>
+
+        {/* Wellness Rate Chart */}
+        {/* <section>
         <h2 className="text-2xl font-semibold text-foreground mb-6">
           Wellness Rate
         </h2>
@@ -209,7 +204,7 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </Card>
       </section> */}
-    </div>
+      </div>
     </>
   );
 };
