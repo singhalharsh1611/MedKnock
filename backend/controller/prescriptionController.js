@@ -4,7 +4,7 @@ import fetch from "node-fetch";
 
 export const analyzePrescription = async (req, res) => {
     try {
-        // 🧪 1. Validation
+        // 1. Validation
         if (!req.file) {
             return res.status(400).json({ success: false, message: "No file uploaded." });
         }
@@ -14,7 +14,7 @@ export const analyzePrescription = async (req, res) => {
 
         console.log("Starting prescription analysis...");
 
-        // ☁️ 2. Cloudinary Upload (optional but useful)
+        // 2. Cloudinary Upload (optional but useful)
         const cloudinaryUrl = await new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
                 { resource_type: "auto", folder: "prescriptions" },
@@ -27,11 +27,11 @@ export const analyzePrescription = async (req, res) => {
             Readable.from(req.file.buffer).pipe(uploadStream);
         });
         console.log("ready to propmt");
-        // 📷 3. Prepare Image for Gemini
+        // 3. Prepare Image for Gemini
         const base64Data = req.file.buffer.toString("base64");
         const mimeType = req.file.mimetype;
 
-        // 🧠 4. Prompt
+        // 4. Prompt
         const prompt = `
 Analyze the attached image of a medical prescription.
 Respond ONLY with a valid JSON array of medicine objects, no extra text.
@@ -50,6 +50,7 @@ Each object should have:
 - If no numeric strength is found, leave dosage as an empty string.
 - If only one medicine is found, return an array with one object.
 - If the file is not a valid prescription, return {"error": "Invalid prescription"}.
+- for quantity, it medicine is prescribed for 10 days, thrice a day, then quantity should be 30
 - Return strictly valid JSON.
 `;
 
@@ -57,7 +58,7 @@ Each object should have:
         const url =
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
-        // 🚀 5. Call Gemini API
+        // 5. Call Gemini API
         const apiResponse = await fetch(url, {
             method: "POST",
             headers: {
@@ -76,7 +77,7 @@ Each object should have:
             }),
         });
 
-        // 🛑 6. Check for Gemini API errors
+        //  6. Check for Gemini API errors
         if (!apiResponse.ok) {
             const errorData = await apiResponse.json();
             throw new Error(
@@ -89,7 +90,7 @@ Each object should have:
             data?.candidates?.[0]?.content?.parts?.[0]?.text ||
             '{"error": "Could not extract prescription details."}';
 
-        // 🧹 7. Clean and parse JSON
+        //  7. Clean and parse JSON
         jsonText = jsonText
             .replace(/```json/g, "")
             .replace(/```/g, "")
@@ -109,7 +110,7 @@ Each object should have:
             throw new Error("AI response was not valid JSON.");
         }
 
-        // 📤 8. Final response
+        // 8. Final response
         res.status(200).json({
             success: true,
             message: "Prescription analyzed successfully.",
