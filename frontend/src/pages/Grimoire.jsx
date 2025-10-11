@@ -319,7 +319,7 @@ const Grimoire = () => {
           </div>
 
           {elixirs.length === 0 ? (
-            <Card className="p-12 text-center">{/* Empty State */}</Card>
+            <Card className="p-12 text-center">No Elixirs found</Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {elixirs
@@ -327,7 +327,13 @@ const Grimoire = () => {
                 .map((elixir) => (
                   <PotionCardActive
                     key={elixir._id}
-                    {...elixir}
+                    id={elixir._id}
+                    pillName={elixir.pillName}
+                    dosage={elixir.dosage}
+                    times={elixir.times}
+                    quantity={elixir.quantity}
+                    isActive={elixir.isActive}
+                    isRefillDue={elixir.quantity < 4}
                     onEdit={handleEditElixir}
                     onDelete={handleDeleteElixir}
                     onToggleActive={handleToggleActive}
