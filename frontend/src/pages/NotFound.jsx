@@ -69,7 +69,7 @@ const NotFound = () => {
     </p>
 
     <Button asChild className="magical-button">
-      <a href="/dashboard" className="flex items-center gap-2">
+      <a href="/" className="flex items-center gap-2">
         <Home className="h-4 w-4" />
         Return to Dashboard
       </a>

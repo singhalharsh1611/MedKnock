@@ -62,8 +62,8 @@ export const Layout = () => {
             className={`flex items-center p-2 rounded-lg cursor-pointer hover:bg-muted ${!isSidebarOpen && 'justify-center'}`}
             onClick={() => navigate('/profile')}
           >
-            <Avatar className="h-9 w-9">
-              <AvatarImage src={user?.photo || 'https://github.com/shadcn.png'} alt="Avatar" />
+            <Avatar className="h-9 w-9 rounded-full overflow-hidden">
+              <AvatarImage src={user?.photo || 'https://github.com/shadcn.png'} alt="Avatar" className="h-full w-full object-cover rounded-full" />
               <AvatarFallback>{user?.firstName && user.firstName[0].toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className={`ml-3 ${!isSidebarOpen && 'hidden'}`}>
