@@ -166,7 +166,7 @@ export const startCronJobs = () => {
                 if (!apiResponse.ok) {
                   body = `Proactive Nudge: You've missed your ${schedule.pillName} a few times recently. It's due in 10 minutes!`;
                 } else {
-                  const data = JSON.parse(responseText);
+                  const data = await apiResponse.json();
                   const pattern =
                     data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 

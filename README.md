@@ -14,6 +14,8 @@ MedKnock is a full-stack medication management application designed to help user
 - Web scraping for medicine data
 - Responsive frontend with React and Tailwind CSS
 - Whatsapp Notification Integrated
+- AI Report analyzer
+- AI Prescription reader 
 
 ## Tech Stack
 
