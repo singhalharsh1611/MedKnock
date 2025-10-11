@@ -27,9 +27,7 @@ const Dashboard = () => {
   const [currentStreak, setCurrentStreak] = useState(0);
   const [loading,setLoading] = useState(false);
 
-  useEffect(() => {
-
-    const fetchSchdeules = async () => {
+  const fetchSchdeules = async () => {
       try {
         setLoading(true);
         const res = await axios.get(`${backendUrl}/api/v1/schedules`, {
@@ -46,6 +44,8 @@ const Dashboard = () => {
         setLoading(false);
       }
     }
+
+  useEffect(() => {
     fetchSchdeules();
   }, [token]);
 
@@ -65,6 +65,7 @@ const Dashboard = () => {
           ? {...e, quantity: res.data.quantity, canLog:false}:e
         )
       )
+      await fetchSchdeules();
       setLoading(false);
     } catch (err) {
       console.error(err.response?.data?.message || err.message);
