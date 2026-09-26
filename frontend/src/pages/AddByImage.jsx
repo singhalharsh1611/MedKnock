@@ -121,7 +121,7 @@ const AddByImage = () => {
       <Card className="p-6">
         <div className="flex gap-4 items-center">
           <Input type="file" accept="image/*" onChange={handleFileChange}  />
-          <Button onClick={handleAnalyze} className="magical-button">
+          <Button onClick={handleAnalyze} className="medical-button">
             {loading ? "Analyzing..." : "Analyze Prescription"}
           </Button>
         </div>
@@ -194,7 +194,7 @@ const AddByImage = () => {
             </Card>
           ))}
 
-          <Button onClick={handleSubmit} className="magical-button w-full">
+          <Button onClick={handleSubmit} className="medical-button w-full">
             {loading ? "Submitting..." : "Submit All to Schedule"}
           </Button>
         </div>

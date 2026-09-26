@@ -19,11 +19,11 @@ export default {
   				DEFAULT: 'hsl(var(--card))',
   				foreground: 'hsl(var(--card-foreground))'
   			},
-        magical: {
-          purple: "hsl(var(--magical-purple))",
-          blue: "hsl(var(--magical-blue))",
-          gold: "hsl(var(--magical-gold))",
-          green: "hsl(var(--magical-green))",
+        medical: {
+          purple: "hsl(var(--medical-purple))",
+          blue: "hsl(var(--medical-blue))",
+          gold: "hsl(var(--medical-gold))",
+          green: "hsl(var(--medical-green))",
         },
   			popover: {
   				DEFAULT: 'hsl(var(--popover))',

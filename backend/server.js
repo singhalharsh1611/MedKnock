@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import connectDB from "./config/db.js";
 import userRouter from "./routes/userRouter.js"
 import dotenv from "dotenv";
 import scheduleRouter from "./routes/scheduleRouter.js"
@@ -39,10 +38,9 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-connectDB();
 
 app.get('/', (req, res) => {
-  res.send('Welcome to the Alchemist\'s Grand Grimoire API! 🧪');
+  res.send('Welcome to the Medical\'s Grand MedKnock API! 🧪');
 });
 
 app.use('/api/v1/user', userRouter);
@@ -60,4 +58,5 @@ startCronJobs();
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+
 

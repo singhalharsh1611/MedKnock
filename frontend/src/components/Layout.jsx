@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '../contexts/ThemeContext';
-import { Sun, Moon, LogOut, Sparkles, BookOpen, BarChart3, Scale, ChevronLeft } from 'lucide-react';
+import { Sun, Moon, LogOut, Sparkles, BookOpen, BarChart3, Scale, ChevronLeft, History } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -17,10 +17,11 @@ export const Layout = () => {
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },
-    { path: '/grimoire', label: 'My Grimoire', icon: BookOpen },
+    { path: '/medications', label: 'My Medications', icon: BookOpen },
     { path: '/compare', label: 'Compare', icon: Scale },
     { path: '/stats', label: 'Statistics', icon: BookOpen },
     { path: '/reports', label: 'Reports', icon: BookOpen },
+    { path: '/logs', label: 'Logs', icon: History },
   ];
 
   const isActive = (path) => location.pathname === path;

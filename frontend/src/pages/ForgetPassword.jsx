@@ -116,7 +116,7 @@ const ForgotPassword = () => {
                 <Button
                   onClick={handleSendOTP}
                   disabled={loading}
-                  className="magical-button w-full"
+                  className="medical-button w-full"
                 >
                   {loading ? (
                     <Loader2 className="animate-spin h-5 w-5" />
@@ -140,7 +140,7 @@ const ForgotPassword = () => {
                     className="pl-10 tracking-widest text-center font-mono"
                   />
                 </div>
-                <Button onClick={handleVerifyOTP} className="magical-button w-full">
+                <Button onClick={handleVerifyOTP} className="medical-button w-full">
                   Verify OTP
                 </Button>
               </>
@@ -161,7 +161,7 @@ const ForgotPassword = () => {
                 <Button
                   onClick={handleResetPassword}
                   disabled={loading}
-                  className="magical-button w-full"
+                  className="medical-button w-full"
                 >
                   {loading ? (
                     <Loader2 className="animate-spin h-5 w-5" />

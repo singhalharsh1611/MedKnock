@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
       const res = await axios.get(`${backendUrl}/api/v1/user/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setUser({ ...res.data, userId: res.data._id });
+      setUser({ ...res.data, userId: res.data.id });
     } catch (err) {
       console.error("Failed to fetch user photo:", err);
       logout();
@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }) => {
         password,
       });
       if (response.data.success) {
-        toast.success("Welcome back to your Grimoire🪄");
+        toast.success("Welcome back to your Medications🪄");
         setAuthState(response.data.data.token);
         navigate("/dashboard");
       }

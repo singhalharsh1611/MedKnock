@@ -1,78 +1,48 @@
-import { chromium } from "playwright";
-import * as cheerio from "cheerio";
-
-export async function scrape1mg(medicineName) {
-    let browser = null;
-    let page = null;
-
-    // Multiple possible selectors (updated frequently by 1mg)
-    const cardSelectors = [
-        ".style__container___cTDz0",
-        ".style__product-box___3oEU6", // add another potential card selector here
-    ];
-    const nameSelectors = [
-        ".style__pro-title___3zxNC",
-        ".style__pro-title___3G3rr", // alternative product title selector
-    ];
-    const priceSelectors = [
-        ".style__price-tag___B2csA",
-        ".style__price-tag___KzOkY", // alternative price selector
-    ];
+export async function scrape1mg(medicineName, userCity = "New Delhi") {
+    const url = new URL("https://www.1mg.com/pwa-api/api/v4/search/all");
+    
+    url.searchParams.append("q", medicineName);
+    url.searchParams.append("city", userCity);
+    url.searchParams.append("filter", "");
+    url.searchParams.append("page_number", "0");
+    url.searchParams.append("per_page", "10");
+    url.searchParams.append("types", "sku,allopathy");
+    url.searchParams.append("sort", "relevance");
+    url.searchParams.append("fetch_eta", "true");
+    url.searchParams.append("is_city_serviceable", "true");
+    url.searchParams.append("substitutes_filter", "false");
 
     try {
-        browser = await chromium.launch({ headless: true });
-        page = await browser.newPage();
-
-        const searchUrl = `https://www.1mg.com/search/all?name=${encodeURIComponent(medicineName)}`;
-        await page.goto(searchUrl, { waitUntil: "networkidle" });
-
-        let firstCard = null;
-        const content = await page.content();
-        const $ = cheerio.load(content);
-
-        // Try multiple card selectors
-        for (const selector of cardSelectors) {
-            firstCard = $(selector).first();
-            if (firstCard.length) break;
-        }
-        if (!firstCard || !firstCard.length) return null;
-
-        // Try multiple inner selectors for product name
-        let productName = "";
-        for (const sel of nameSelectors) {
-            productName = firstCard.find(sel).first().text().trim();
-            if (productName) break;
-        }
-
-        // Try multiple inner selectors for price
-        let price = "";
-
-        for (const sel of priceSelectors) {
-            const priceDiv = firstCard.find(sel).first();
-            if (!priceDiv.length) continue;
-
-            if (sel === ".style__price-tag___KzOkY") {
-                price = priceDiv
-                    .contents()
-                    .filter((i, el) => el.type === 'text')
-                    .text()
-                    .trim();
-            } else {
-                price = priceDiv.text().trim();
+        const res = await fetch(url.toString(), {
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "Accept": "application/json, text/plain, */*",
+                "x-city": userCity,
+                "city": userCity
             }
+        });
+        
+        if (!res.ok) return null;
+        
+        const responseData = await res.json();
+        if (!responseData?.data?.search_results) return null;
+        
+        const results = responseData.data.search_results;
+        const bestAvailableResult = results.find(item => item.available === true && item.type === "drug");
+        
+        if (!bestAvailableResult) return null;
+        
+        let finalPrice = bestAvailableResult.prices?.discounted_price || bestAvailableResult.prices?.mrp || "N/A";
 
-            if (price) break;
-        }
-
-        const relativeLink = firstCard.find("a").attr("href");
-        const productUrl = relativeLink?.startsWith("http") ? relativeLink : `https://www.1mg.com${relativeLink}`;
-
-        return { vendor: "1mg", productName, price, productUrl };
+        return {
+            vendor: "1mg",
+            productName: bestAvailableResult.name,
+            price: finalPrice.toString().includes("₹") ? finalPrice : `₹${finalPrice}`,
+            productUrl: `https://www.1mg.com${bestAvailableResult.url}`
+        };
+        
     } catch (err) {
-        console.error("1mg scrape failed:", err.message);
+        console.error("1mg API scrape failed:", err.message);
         return null;
-    } finally {
-        if (page) await page.close();
-        if (browser) await browser.close();
     }
 }

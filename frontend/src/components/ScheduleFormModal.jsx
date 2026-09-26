@@ -112,8 +112,8 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId, onSuccess }) => 
         );
       }
       // On success
-      toast.success(editingId ? "Elixir Updated! ✨" : "New Elixir Added! ✨", {
-        description: `${response.data.pillName} has been ${editingId ? 'updated' : 'added to'} your grimoire.`,
+      toast.success(editingId ? "Medicine Updated! ✨" : "New Medicine Added! ✨", {
+        description: `${response.data.pillName} has been ${editingId ? 'updated' : 'added to'} your medications.`,
       });
 
       if (onSuccess) onSuccess();
@@ -144,20 +144,20 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId, onSuccess }) => 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-magical-purple" />
-            {editingId ? 'Edit Elixir' : 'Add New Elixir'}
+            <Clock className="h-5 w-5 text-medical-purple" />
+            {editingId ? 'Edit Medicine' : 'Add New Medicine'}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div>
-              <Label htmlFor="pillName">Elixir Name *</Label>
+              <Label htmlFor="pillName">Medicine Name *</Label>
               <Input
                 id="pillName"
                 value={formData.pillName}
                 onChange={(e) => setFormData({ ...formData, pillName: e.target.value })}
-                placeholder="e.g., Healing Potion"
+                placeholder="e.g., Healing Medicine"
                 className="mt-1"
                 required
               />
@@ -242,8 +242,8 @@ export const ScheduleFormModal = ({ isOpen, onClose, editingId, onSuccess }) => 
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Cancel
             </Button>
-            <Button type="submit" className="magical-button flex-1" disabled={loading}>
-              {loading ? "Please wait..." : editingId ? "Update Elixir" : "Add Elixir"}
+            <Button type="submit" className="medical-button flex-1" disabled={loading}>
+              {loading ? "Please wait..." : editingId ? "Update Medicine" : "Add Medicine"}
             </Button>
 
           </div>

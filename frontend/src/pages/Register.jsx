@@ -121,13 +121,13 @@ const Register = () => {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <Sparkles className="h-12 w-12 text-magical-purple elixir-glow" />
+              <Sparkles className="h-12 w-12 text-medical-purple medicine-glow" />
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">
               MedKnock
             </h1>
             <p className="text-muted-foreground">
-              Create your alchemist grimoire
+              Create your medical medications
             </p>
           </div>
 
@@ -187,7 +187,7 @@ const Register = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value })
                     }
-                    placeholder="alchemist@example.com"
+                    placeholder="medical@example.com"
                     required
                   />
                 </div>
@@ -203,7 +203,7 @@ const Register = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, password: e.target.value })
                     }
-                    placeholder="Create a secret spell"
+                    placeholder="Create a secret process"
                     required
                   />
                 </div>
@@ -225,14 +225,14 @@ const Register = () => {
                         confirmPassword: e.target.value,
                       })
                     }
-                    placeholder="Confirm your secret spell"
+                    placeholder="Confirm your secret process"
                     required
                   />
                 </div>
 
                 <Button
                   type="submit"
-                  className="magical-button w-full"
+                  className="medical-button w-full"
                   disabled={isLoading}
                 >
                   {isLoading ? "Sending OTP..." : "Send OTP"}
@@ -259,7 +259,7 @@ const Register = () => {
 
                 <Button
                   onClick={handleVerifyAndRegister}
-                  className="magical-button w-full"
+                  className="medical-button w-full"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -286,10 +286,10 @@ const Register = () => {
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Already have a grimoire?{" "}
+                Already have a medications?{" "}
                 <Link
                   to="/login"
-                  className="text-magical-purple hover:underline font-semibold"
+                  className="text-medical-purple hover:underline font-semibold"
                 >
                   Enter here
                 </Link>

@@ -1,11 +1,9 @@
 import cron from "node-cron";
-import Schedule from "../models/scheduleModel.js";
-import DoseLog from "../models/doseLogModel.js";
-import User from "../models/userModel.js";
-import { sendNotification } from "../config/firebaseNotifications.js";
+import prisma from "../config/prismaClient.js";
+import { sendNotification } from "../utils/pushClient.js";
 import fetch from "node-fetch";
-import { sendWhatsAppMessage } from "../config/twilio.js";
-import sgMail from '@sendgrid/mail';
+import { callLLM } from "../utils/llmClient.js";
+import { sendWhatsAppMessage } from "../utils/whatsappClient.js";
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -14,35 +12,13 @@ dotenv.config();
 const getTimeForToday = (timeStr) => {
   const [hours, minutes] = timeStr.split(":").map(Number);
   const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const utc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
+  return new Date(utc - istOffset);
+  // return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
 };
 
-//helper for sending mail notification
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-const sendEmail = async (toEmail, subject, htmlContent, textContent) => {
-  // Create the message object for SendGrid
-  const msg = {
-    to: toEmail,
-    from: process.env.SENDGRID_VERIFIED_SENDER, // This MUST be the email you verified on SendGrid
-    subject: subject,
-    text: textContent || htmlContent, // Provides a fallback if only HTML is present
-    html: htmlContent,
-  };
-
-  try {
-    await sgMail.send(msg);
-    console.log(`Email sent successfully to ${toEmail} via SendGrid`);
-    return { success: true };
-  } catch (error) {
-    console.error("SendGrid email sending failed:", error);
-    if (error.response) {
-      // Log the detailed error from SendGrid's API
-      console.error(error.response.body);
-    }
-    return { success: false, error: error };
-  }
-};
 
 // every 10 minutes check missed doses
 export const startCronJobs = () => {
@@ -52,35 +28,42 @@ export const startCronJobs = () => {
       const now = new Date();
       const oneHoursAgo = new Date(now.getTime() - 1 * 60 * 60 * 1000);
 
-      const schedules = await Schedule.find({});
+      const schedules = await prisma.schedule.findMany();
       for (const schedule of schedules) {
         for (const time of schedule.times) {
           const doseTime = getTimeForToday(time);
 
           // If dose time passed more than 1h ago but today no log exists them mark the pill as missed
           if (doseTime <= oneHoursAgo) {
-            const existing = await DoseLog.findOne({
-              scheduleId: schedule._id,
-              userId: schedule.userId,
-              timestamp: {
-                $gte: doseTime,
-                $lte: new Date(doseTime.getTime() + 1 * 60 * 60 * 1000)
+            const existing = await prisma.doseLog.findFirst({
+              where: {
+                scheduleId: schedule.id,
+                userId: schedule.userId,
+                timestamp: {
+                  gte: new Date(doseTime.getTime() - 1 * 60 * 60 * 1000),
+                  lte: new Date(doseTime.getTime() + 1 * 60 * 60 * 1000)
+                }
               }
             });
 
             if (!existing) {
-              await DoseLog.create({
-                scheduleId: schedule._id,
-                userId: schedule.userId,
-                status: "missed",
-                timestamp: doseTime
+              await prisma.doseLog.create({
+                data: {
+                  scheduleId: schedule.id,
+                  userId: schedule.userId,
+                  status: "missed",
+                  timestamp: doseTime
+                }
               });
 
               //increase risk if missed
               schedule.riskScore += 2;
-              await schedule.save();
+              await prisma.schedule.update({
+                where: { id: schedule.id },
+                data: { riskScore: schedule.riskScore }
+              });
 
-              console.log(`Marked missed dose for schedule ${schedule._id} at ${time}`);
+              console.log(`Marked missed dose for schedule ${schedule.id} at ${time}`);
             }
           }
         }
@@ -102,9 +85,11 @@ export const startCronJobs = () => {
       const timeString = `${hours}:${minutes}`;
 
       // 2. Find all active schedules that have a dose due at that specific time
-      const schedulesToSend = await Schedule.find({
-        times: timeString,
-        isActive: true,
+      const schedulesToSend = await prisma.schedule.findMany({
+        where: {
+          times: { has: timeString },
+          isActive: true,
+        }
       });
 
       if (schedulesToSend.length === 0) {
@@ -115,11 +100,13 @@ export const startCronJobs = () => {
 
       // 3. For each schedule, find the user and send a notification
       for (const schedule of schedulesToSend) {
-        const user = await User.findById(schedule.userId);
+        const user = await prisma.user.findUnique({
+          where: { id: schedule.userId }
+        });
 
         // Check if the user exists and has a saved fcmToken
         if (user && user.fcmToken) {
-          const title = "Alchemist's Reminder ✨";
+          const title = "Medication Reminder ✨";
           let body = `Your ${schedule.pillName} is due in 10 minutes!`;
 
           // ai prediction
@@ -128,12 +115,14 @@ export const startCronJobs = () => {
 
             try {
               // Fetch recent missed dose logs
-              const missedLogs = await DoseLog.find({
-                scheduleId: schedule._id,
-                status: "missed",
-              })
-                .sort({ timestamp: -1 })
-                .limit(40);
+              const missedLogs = await prisma.doseLog.findMany({
+                where: {
+                  scheduleId: schedule.id,
+                  status: "missed",
+                },
+                orderBy: { timestamp: 'desc' },
+                take: 40
+              });
 
               if (missedLogs.length > 0) {
                 const timestamps = missedLogs.map((log) => log.timestamp);
@@ -149,32 +138,20 @@ export const startCronJobs = () => {
         Your Response:
       `;
 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+                console.log("Sending request to LLM API...");
 
-                console.log("Sending request to Gemini API...");
-
-                const apiResponse = await fetch(url, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                  }),
-                });
-
-                console.log("Gemini raw status:", apiResponse.status);
-
-                if (!apiResponse.ok) {
-                  body = `Proactive Nudge: You've missed your ${schedule.pillName} a few times recently. It's due in 10 minutes!`;
-                } else {
-                  const data = JSON.parse(responseText);
-                  const pattern =
-                    data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+                try {
+                  let pattern = await callLLM([{ text: prompt }]);
+                  if (pattern) pattern = pattern.trim();
 
                   if (pattern) {
                     body = `AI Nudge: Records show you often miss your ${pattern} dose of ${schedule.pillName}. It's due in 10 minutes!`;
                   } else {
                     body = `Proactive Nudge: You've missed your ${schedule.pillName} a few times recently. It's due in 10 minutes!`;
                   }
+                } catch (error) {
+                  console.error("LLM API failed:", error);
+                  body = `Proactive Nudge: You've missed your ${schedule.pillName} a few times recently. It's due in 10 minutes!`;
                 }
               }
             } catch (error) {
@@ -186,8 +163,7 @@ export const startCronJobs = () => {
 
           await sendNotification(user.fcmToken, title, body);
 
-          // Send email notification
-          await sendEmail(user.email, title, `<h3>${body}</ h3>`, body);
+(user.email, title, `<h3>${body}</ h3>`, body);
 
           //send whatsapp notification
           if (user.phone) {
@@ -211,9 +187,11 @@ cron.schedule("0 */6 * * *", async () => {
   console.log("Low stock check cron executed at:", new Date());
   try {
     // 1. Find schedules where quantity is less than 4
-    const lowStockSchedules = await Schedule.find({
-      quantity: { $lt: 4 },
-      isActive: true,
+    const lowStockSchedules = await prisma.schedule.findMany({
+      where: {
+        quantity: { lt: 4 },
+        isActive: true,
+      }
     });
 
     if (lowStockSchedules.length === 0) {
@@ -225,7 +203,9 @@ cron.schedule("0 */6 * * *", async () => {
 
     // 2. Send notification to each user
     for (const schedule of lowStockSchedules) {
-      const user = await User.findById(schedule.userId);
+      const user = await prisma.user.findUnique({
+        where: { id: schedule.userId }
+      });
 
       if (user && user.fcmToken) {
         const title = "Medicine Stock Alert ⚠️";
@@ -234,8 +214,7 @@ cron.schedule("0 */6 * * *", async () => {
         // Send push notification
         await sendNotification(user.fcmToken, title, body);
 
-        // Send email notification
-        await sendEmail(user.email, title, `<h3>${body}</h3>`, body);
+(user.email, title, `<h3>${body}</h3>`, body);
 
         //send whatsapp notification
         if (user.phone) {

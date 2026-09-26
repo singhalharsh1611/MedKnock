@@ -1,6 +1,7 @@
 import { Readable } from "stream";
 import cloudinary from "../config/cloudinaryConfig.js";
 import fetch from "node-fetch";
+import { callLLM } from "../utils/llmClient.js";
 
 export const analyzePrescription = async (req, res) => {
     try {
@@ -27,7 +28,7 @@ export const analyzePrescription = async (req, res) => {
             Readable.from(req.file.buffer).pipe(uploadStream);
         });
         console.log("ready to propmt");
-        // 3. Prepare Image for Gemini
+        // 3. Prepare Image for LLM
         const base64Data = req.file.buffer.toString("base64");
         const mimeType = req.file.mimetype;
 
@@ -55,40 +56,15 @@ Each object should have:
 `;
 
 
-        const url =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
-
-        // 5. Call Gemini API
-        const apiResponse = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-goog-api-key": process.env.GEMINI_API_KEY,
-            },
-            body: JSON.stringify({
-                contents: [
-                    {
-                        parts: [
-                            { inline_data: { mime_type: mimeType, data: base64Data } },
-                            { text: prompt },
-                        ],
-                    },
-                ],
-            }),
-        });
-
-        //  6. Check for Gemini API errors
-        if (!apiResponse.ok) {
-            const errorData = await apiResponse.json();
-            throw new Error(
-                `Gemini API failed: ${apiResponse.status} - ${JSON.stringify(errorData)}`
-            );
+        // 5. Call LLM API
+        let jsonText = await callLLM([
+            { inline_data: { mime_type: mimeType, data: base64Data } },
+            { text: prompt }
+        ]);
+        if (!jsonText) {
+            jsonText = '{"error": "Could not extract prescription details."}';
         }
-        console.log("got result from gemini")
-        const data = await apiResponse.json();
-        let jsonText =
-            data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-            '{"error": "Could not extract prescription details."}';
+        console.log("got result from LLM");
 
         //  7. Clean and parse JSON
         jsonText = jsonText

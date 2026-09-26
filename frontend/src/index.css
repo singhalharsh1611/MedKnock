@@ -34,15 +34,15 @@
     --input: 45 15% 85%;
     --ring: 30 40% 25%;
 
-    /* Magical Colors */
-    --magical-purple: 260 70% 65%;
-    --magical-blue: 210 85% 60%;
-    --magical-gold: 45 95% 55%;
-    --magical-green: 142 60% 45%;
-    --wellness-gradient: linear-gradient(135deg, hsl(var(--magical-purple)), hsl(var(--magical-blue)));
-    --potion-gradient: linear-gradient(145deg, hsl(var(--magical-gold)), hsl(var(--magical-green)));
-    --mystical-glow: 0 0 20px hsl(var(--magical-purple) / 0.3);
-    --elixir-shadow: 0 8px 32px hsl(var(--magical-blue) / 0.15);
+    /* Medical Colors */
+    --medical-purple: 260 70% 65%;
+    --medical-blue: 210 85% 60%;
+    --medical-gold: 45 95% 55%;
+    --medical-green: 142 60% 45%;
+    --wellness-gradient: linear-gradient(135deg, hsl(var(--medical-purple)), hsl(var(--medical-blue)));
+    --medicine-gradient: linear-gradient(145deg, hsl(var(--medical-gold)), hsl(var(--medical-green)));
+    --mystical-glow: 0 0 20px hsl(var(--medical-purple) / 0.3);
+    --medicine-shadow: 0 8px 32px hsl(var(--medical-blue) / 0.15);
 
     --radius: 0.75rem;
 
@@ -93,15 +93,15 @@
     --input: 236 15% 25%;
     --ring: 260 70% 65%;
 
-    /* Dark Mode Magical Colors */
-    --magical-purple: 260 70% 70%;
-    --magical-blue: 210 85% 65%;
-    --magical-gold: 45 95% 60%;
-    --magical-green: 142 60% 50%;
-    --wellness-gradient: linear-gradient(135deg, hsl(var(--magical-purple)), hsl(var(--magical-blue)));
-    --potion-gradient: linear-gradient(145deg, hsl(var(--magical-gold)), hsl(var(--magical-green)));
-    --mystical-glow: 0 0 30px hsl(var(--magical-purple) / 0.5);
-    --elixir-shadow: 0 8px 32px hsl(var(--magical-blue) / 0.3);
+    /* Dark Mode Medical Colors */
+    --medical-purple: 260 70% 70%;
+    --medical-blue: 210 85% 65%;
+    --medical-gold: 45 95% 60%;
+    --medical-green: 142 60% 50%;
+    --wellness-gradient: linear-gradient(135deg, hsl(var(--medical-purple)), hsl(var(--medical-blue)));
+    --medicine-gradient: linear-gradient(145deg, hsl(var(--medical-gold)), hsl(var(--medical-green)));
+    --mystical-glow: 0 0 30px hsl(var(--medical-purple) / 0.5);
+    --medicine-shadow: 0 8px 32px hsl(var(--medical-blue) / 0.3);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -125,16 +125,16 @@
 }
 
 @layer components {
-  /* Magical Component Styles */
-  .potion-card {
+  /* Medical Component Styles */
+  .medicine-card {
     @apply bg-gradient-to-br from-card to-card/80 border border-border/50 rounded-lg p-6 shadow-lg;
-    box-shadow: var(--elixir-shadow);
+    box-shadow: var(--medicine-shadow);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .potion-card:hover {
+  .medicine-card:hover {
     @apply scale-105 shadow-2xl;
-    box-shadow: var(--mystical-glow), var(--elixir-shadow);
+    box-shadow: var(--mystical-glow), var(--medicine-shadow);
   }
 
   .wellness-chart {
@@ -143,26 +143,26 @@
   }
 
   .streak-counter {
-    background: var(--potion-gradient);
+    background: var(--medicine-gradient);
     @apply rounded-xl p-6 text-white shadow-xl font-bold text-center;
   }
 
-  .magical-button {
-    background: var(--potion-gradient);
+  .medical-button {
+    background: var(--medicine-gradient);
     @apply px-6 py-3 rounded-lg text-white font-semibold shadow-lg transition-all duration-300;
   }
 
-  .magical-button:hover {
+  .medical-button:hover {
     @apply scale-105 shadow-xl;
     box-shadow: var(--mystical-glow);
   }
 
-  .grimoire-header {
+  .medications-header {
     background: var(--wellness-gradient);
     @apply text-white px-8 py-6 rounded-t-xl;
   }
 
-  .elixir-glow {
-    filter: drop-shadow(0 0 8px hsl(var(--magical-purple) / 0.4));
+  .medicine-glow {
+    filter: drop-shadow(0 0 8px hsl(var(--medical-purple) / 0.4));
   }
 }

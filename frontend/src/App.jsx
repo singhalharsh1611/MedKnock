@@ -7,7 +7,7 @@ import { useState } from "react";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-import Grimoire from "./pages/Grimoire";
+import Medications from "./pages/Medications";
 import ShareableReport from "./pages/ShareableReport";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
@@ -45,7 +45,7 @@ function App() {
             {/* The index route automatically renders at the parent's path ("/") */}
             <Route index element={<Dashboard />} />
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="grimoire" element={<Grimoire />} />
+            <Route path="medications" element={<Medications />} />
             <Route path="profile" element={<Profile />} />
             <Route path="compare" element={<Compare />} />
             <Route path="stats" element={<StatsPage />} />
@@ -63,7 +63,7 @@ function App() {
       {token && !isChatbotOpen && (
         <Button
           onClick={() => setIsChatbotOpen(!isChatbotOpen)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full magical-button shadow-2xl z-50 hover:scale-110 transition-transform"
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full medical-button shadow-2xl z-50 hover:scale-110 transition-transform"
           style={{
             boxShadow:
               "0 0 20px rgba(99,102,241,0.6), inset 0 0 10px rgba(99,102,241,0.3)",

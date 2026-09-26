@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { PotionCard } from "../components/PotionCard";
+import { MedicineCard } from "../components/MedicineCard";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Flame, TrendingUp, Calendar } from "lucide-react";
@@ -20,7 +20,7 @@ import Loader from "@/components/Loader";
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
 const Dashboard = () => {
-  const [todaysElixirs, setTodaysElixirs] = useState([]);
+  const [todaysMedicines, setTodaysMedicines] = useState([]);
   const {token, user} = useAuth();
   const [takenDoses, setTakenDoses] = useState(0);
   const [totalDoses, setTotalDoses] = useState(0);
@@ -35,7 +35,7 @@ const Dashboard = () => {
             Authorization:`Bearer ${token}`
           }
         })
-        setTodaysElixirs(res.data.items);
+        setTodaysMedicines(res.data.items);
         setTakenDoses(res.data.stats.takenDosesToday);
         setTotalDoses(res.data.stats.totalDosesToday);
         setCurrentStreak(res.data.currentStreak);
@@ -59,9 +59,9 @@ const Dashboard = () => {
         }
       })
 
-      setTodaysElixirs(prev =>
+      setTodaysMedicines(prev =>
         prev.map(e=>
-          e._id === scheduleId
+          e.id === scheduleId
           ? {...e, quantity: res.data.quantity, canLog:false}:e
         )
       )
@@ -82,8 +82,10 @@ const Dashboard = () => {
         const permission = await Notification.requestPermission();
         if(permission==='granted'){
           const messaging = getMessaging();
-          const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-          const fcmToken = await getToken(messaging, {vapidKey: vapidKey});
+          const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY?.trim(); console.log("Current VAPID KEY in Dashboard:", vapidKey);
+          await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+            const swRegistration = await navigator.serviceWorker.ready;
+            const fcmToken = await getToken(messaging, {vapidKey: vapidKey, serviceWorkerRegistration: swRegistration});
           // console.log("vk: ",vapidKey);
           
 
@@ -91,7 +93,7 @@ const Dashboard = () => {
             await axios.post(`${backendUrl}/api/v1/notifications/subscribe`, {fcmToken}, { headers: { Authorization: `Bearer ${token}` }})
           }
 
-          // console.log("fcm token: ", fcmToken);
+          console.log("? NEW FCM TOKEN SUCCESSFULLY GENERATED: ", fcmToken);
         }
       }catch(error){
         console.error('Error getting notification permission or token:', error);
@@ -110,32 +112,32 @@ const Dashboard = () => {
         {/* Welcome Section */}
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Welcome back, {user?.firstName || "Alchemist"}! ✨
+            Welcome back, {user?.firstName || "Medical"}! ✨
           </h1>
           <p className="text-muted-foreground">
-            Your magical health journey continues today
+            Your medical health journey continues today
           </p>
         </div>
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Today's Progress */}
-          <Card className="p-6 bg-gradient-to-br from-magical-blue/20 to-magical-purple/20">
+          <Card className="p-6 bg-gradient-to-br from-medical-blue/20 to-medical-purple/20">
             <div className="flex items-center gap-3">
-              <Calendar className="h-6 w-6 text-magical-blue" />
+              <Calendar className="h-6 w-6 text-medical-blue" />
               <div>
                 <p className="text-2xl font-bold text-foreground">
                   {takenDoses}/{totalDoses}
                 </p>
-                <p className="text-sm text-muted-foreground">Elixirs Today</p>
+                <p className="text-sm text-muted-foreground">Medicines Today</p>
               </div>
             </div>
           </Card>
 
           {/* Weekly Average */}
-          <Card className="p-6 bg-gradient-to-br from-magical-green/20 to-magical-gold/20">
+          <Card className="p-6 bg-gradient-to-br from-medical-green/20 to-medical-gold/20">
             <div className="flex items-center gap-3">
-              <TrendingUp className="h-6 w-6 text-magical-green" />
+              <TrendingUp className="h-6 w-6 text-medical-green" />
               <div>
                 <p className="text-2xl font-bold text-foreground">
                   {totalDoses > 0
@@ -148,34 +150,40 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Today's Elixirs */}
+        {/* Today's Medicines */}
         <section>
           <div className="flex items-center gap-3 mb-6">
             <h2 className="text-2xl font-semibold text-foreground">
-              Today's Elixirs
+              Today's Medicines
             </h2>
             <Badge
               variant="outline"
-              className="text-magical-purple border-magical-purple"
+              className="text-medical-purple border-medical-purple"
             >
-              {todaysElixirs.length} due today
+              {todaysMedicines.length} due today
             </Badge>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {todaysElixirs
-              .filter((elixir) => elixir.isActive)
-              .map((elixir) => (
-                <PotionCard
-                  key={elixir._id}
-                  id={elixir._id}
-                  {...elixir}
-                  isRefillDue={elixir.quantity < 4}
-                  onLogTaken={() => handleLogToken(elixir._id)}
-                  onEdit={(id) => console.log("Edit:", id)}
-                  onDelete={(id) => console.log("Delete:", id)}
-                />
-              ))}
+            {todaysMedicines.filter((m) => m.isActive).length === 0 ? (
+              <Card className="col-span-full p-12 text-center flex flex-col items-center justify-center bg-medical-blue/5 border-dashed border-2">
+                <p className="text-muted-foreground text-lg">No medicines scheduled for today.</p>
+              </Card>
+            ) : (
+              todaysMedicines
+                .filter((medicine) => medicine.isActive)
+                .map((medicine) => (
+                  <MedicineCard
+                    key={medicine.id}
+                    id={medicine.id}
+                    {...medicine}
+                    isRefillDue={medicine.quantity < 4}
+                    onLogTaken={() => handleLogToken(medicine.id)}
+                    onEdit={(id) => console.log("Edit:", id)}
+                    onDelete={(id) => console.log("Delete:", id)}
+                  />
+                ))
+            )}
           </div>
         </section>
 
@@ -211,3 +219,13 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+
+
+
+
+
+
+
+
+

@@ -199,8 +199,8 @@ export const LandingPage = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 1.5, duration: 0.8 }}
           >
-            Your personal alchemist for health and medicine — track, compare,
-            and manage your wellness journey with precision and magical care.
+            Your personal medical for health and medicine — track, compare,
+            and manage your wellness journey with precision and medical care.
           </motion.p>
           <motion.div
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"

@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String   @id @default(uuid())
+  email               String   @unique
+  password            String?
+  firstName           String?
+  lastName            String?
+  age                 Int?
+  gender              String?
+  phone               String?
+
+  street              String?
+  city                String?
+  state               String?
+  zip                 String?
+  country             String?
+
+  photo               String?  @default("https://github.com/shadcn.png")
+
+  bloodGroup          String?
+  allergies           String[] @default([])
+  medicalConditions   String[] @default([])
+
+  emergencyName       String?
+  emergencyPhone      String?
+
+  currentStreak       Int      @default(0)
+  lastStreakDate      DateTime?
+
+  pushSubscription    Json?
+  isVerified          Boolean  @default(false)
+  fcmToken            String?
+
+  googleId            String?
+  googleCalendarToken String?
+  googleRefreshToken  String?
+  isGoogleConnected   Boolean  @default(false)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  schedules           Schedule[]
+  doseLogs            DoseLog[]
+  reports             Report[]
+}
+
+model Schedule {
+  id             String    @id @default(uuid())
+  user           User      @relation(fields: [userId], references: [id])
+  userId         String
+  pillName       String
+  dosage         String?
+  times          String[]
+  riskScore      Float     @default(0)
+  quantity       Int       @default(0)
+  startDate      DateTime  @default(now())
+  isActive       Boolean   @default(true)
+  googleEventIds String[]  @default([])
+  lastSyncedHash String?
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  doseLogs       DoseLog[]
+}
+
+model DoseLog {
+  id          String   @id @default(uuid())
+  schedule    Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  scheduleId  String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  status      String
+  timestamp   DateTime @default(now())
+}
+
+model Report {
+  id            String   @id @default(uuid())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  fileName      String
+  cloudinaryUrl String
+  summary       String   @default("")
+  analyzed      Boolean  @default(false)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

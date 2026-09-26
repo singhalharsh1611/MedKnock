@@ -1,7 +1,4 @@
-import mongoose from "mongoose";
-import DoseLog from "../models/doseLogModel.js";
-import Schedule from "../models/scheduleModel.js";
-import User from "../models/userModel.js";
+import prisma from "../config/prismaClient.js";
 
 // log dose as taken
 export const logDoseAsTaken = async (req, res, next) => {
@@ -11,11 +8,16 @@ export const logDoseAsTaken = async (req, res, next) => {
 
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    if (!mongoose.Types.ObjectId.isValid(scheduleId)) {
+    if (!scheduleId || scheduleId.length !== 24) {
       return res.status(400).json({ message: "Invalid schedule id" });
     }
 
-    const schedule = await Schedule.findOne({ _id: scheduleId, userId });
+    const schedule = await prisma.schedule.findFirst({
+      where: {
+        id: scheduleId,
+        userId: userId
+      }
+    });
 
     if (!schedule) return res.status(404).json({ message: "Schedule not found" });
 
@@ -32,13 +34,15 @@ export const logDoseAsTaken = async (req, res, next) => {
     if (!currentSlot) {
       return res.status(400).json({ message: "Cannot log dose outside the allowed time frame" });
     }
-    const existing = await DoseLog.findOne({
-      scheduleId,
-      userId,
-      status: "taken",
-      timestamp: {
-        $gte: new Date(currentSlot.getTime() - 60 * 60 * 1000),
-        $lte: new Date(currentSlot.getTime() + 60 * 60 * 1000)
+    const existing = await prisma.doseLog.findFirst({
+      where: {
+        scheduleId: scheduleId,
+        userId: userId,
+        status: "taken",
+        timestamp: {
+          gte: new Date(currentSlot.getTime() - 60 * 60 * 1000),
+          lte: new Date(currentSlot.getTime() + 60 * 60 * 1000)
+        }
       }
     });
 
@@ -47,25 +51,35 @@ export const logDoseAsTaken = async (req, res, next) => {
     }
 
     //  Log the dose
-    const log = await DoseLog.create({
-      scheduleId,
-      userId,
-      status: "taken",
-      timestamp: now
+    const log = await prisma.doseLog.create({
+      data: {
+        scheduleId,
+        userId,
+        status: "taken",
+        timestamp: now
+      }
     });
 
-
     // decrease risk score for positive reinforcement
-    if (schedule.riskScore > 0) {
-      schedule.riskScore = Math.max(0, schedule.riskScore - 1);
+    let newRiskScore = schedule.riskScore;
+    if (newRiskScore > 0) {
+      newRiskScore = Math.max(0, newRiskScore - 1);
     }
 
     // Reduce quantity
     //  Reduce medicine quantity
-    if (schedule.quantity > 0) {
-      schedule.quantity -= 1;
+    let newQuantity = schedule.quantity;
+    if (newQuantity > 0) {
+      newQuantity -= 1;
     }
-    await schedule.save();
+    
+    await prisma.schedule.update({
+      where: { id: scheduleId },
+      data: {
+        riskScore: newRiskScore,
+        quantity: newQuantity
+      }
+    });
 
     //  Get today's boundaries
     const todayStart = new Date();
@@ -74,22 +88,27 @@ export const logDoseAsTaken = async (req, res, next) => {
     todayEnd.setHours(23, 59, 59, 999);
 
     //  Check if user completed ALL doses for today
-    const allSchedules = await Schedule.find({ userId, isActive: true });
+    const allSchedules = await prisma.schedule.findMany({
+      where: { userId, isActive: true }
+    });
+    
     let totalDosesToday = 0;
     let takenDosesToday = 0;
 
     for (const sch of allSchedules) {
       totalDosesToday += sch.times.length;
-      const takenCount = await DoseLog.countDocuments({
-        scheduleId: sch._id,
-        userId,
-        status: "taken",
-        timestamp: { $gte: todayStart, $lte: todayEnd }
+      const takenCount = await prisma.doseLog.count({
+        where: {
+          scheduleId: sch.id,
+          userId,
+          status: "taken",
+          timestamp: { gte: todayStart, lte: todayEnd }
+        }
       });
       takenDosesToday += takenCount;
     }
 
-    const user = await User.findById(userId);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
 
     // ✅ Only update streak if all doses for the day are complete
     if (totalDosesToday > 0 && takenDosesToday === totalDosesToday) {
@@ -97,19 +116,27 @@ export const logDoseAsTaken = async (req, res, next) => {
       const yesterday = new Date(todayStart);
       yesterday.setDate(todayStart.getDate() - 1);
 
+      let newStreak = user.currentStreak;
       if (lastDate && lastDate.getTime() === yesterday.getTime()) {
-        user.currentStreak += 1; // continue streak
+        newStreak += 1; // continue streak
       } else {
-        user.currentStreak = 1; // new streak
+        newStreak = 1; // new streak
       }
 
-      user.lastStreakDate = todayStart;
-      await user.save();
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          currentStreak: newStreak,
+          lastStreakDate: todayStart
+        }
+      });
+      
+      user.currentStreak = newStreak;
     }
 
     return res.status(201).json({
       log,
-      quantity: schedule.quantity,
+      quantity: newQuantity,
       streak: user.currentStreak,
       message:
         takenDosesToday === totalDosesToday
@@ -134,29 +161,37 @@ export const getLast7DaysDoseLogs = async (req, res, next) => {
 
     // Fetch dose logs from last 7 days
     
-    const logs = await DoseLog.find({
-      userId,
-      timestamp: { $gte: startDate, $lte: endDate },
-    })
-      .populate({
-        path: "scheduleId",
-        select: "pillName dosage times quantity",
-      })
-      .sort({ timestamp: -1 }) // latest first
-      .lean();
+    const logs = await prisma.doseLog.findMany({
+      where: {
+        userId,
+        timestamp: { gte: startDate, lte: endDate },
+      },
+      include: {
+        schedule: {
+          select: {
+            pillName: true,
+            dosage: true,
+            times: true,
+            quantity: true,
+          }
+        }
+      },
+      orderBy: { timestamp: "desc" }
+    });
 
     if (!logs.length)
       return res.status(200).json({ message: "No logs found for the last 7 days", data: [] });
 
     logs.filter(
-      (log) => log.scheduleId?.pillName && log.scheduleId.pillName.trim() !== ""
+      (log) => log.schedule?.pillName && log.schedule.pillName.trim() !== ""
     );
+    
     // Format response
     const formattedLogs = logs.map((log) => ({
-      _id: log._id,
-      medicineName: log.scheduleId?.pillName || "Unknown",
-      dosage: log.scheduleId?.dosage || "",
-      quantityRemaining: log.scheduleId?.quantity ?? null,
+      _id: log.id,
+      medicineName: log.schedule?.pillName || "Unknown",
+      dosage: log.schedule?.dosage || "",
+      quantityRemaining: log.schedule?.quantity ?? null,
       status: log.status,
       timestamp: log.timestamp,
       time: new Date(log.timestamp).toLocaleTimeString("en-IN", {

@@ -1,9 +1,13 @@
-import User from "../models/userModel.js";
+import prisma from "../config/prismaClient.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import cloudinary from "../config/cloudinaryConfig.js";
 import validator from "validator";
-import sgMail from '@sendgrid/mail';
+
+import { sendEmail } from "../utils/emailClient.js";
+
+
+
 
 export const register = async (req, res) => {
   try {
@@ -17,7 +21,7 @@ export const register = async (req, res) => {
     }
 
     // checking user already exist
-    const existingUser = await User.findOne({ email });
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res
         .status(400)
@@ -29,17 +33,18 @@ export const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // store user
-    const newUser = new User({
-      email,
-      password: hashedPassword,
-      firstName,
-      lastName,
+    const newUser = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+      }
     });
-    await newUser.save();
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: newUser._id },
+      { userId: newUser.id },
       process.env.JWT_SECRET || "your_jwt_secret",
       { expiresIn: "1d" }
     );
@@ -59,16 +64,10 @@ export const register = async (req, res) => {
 
 export const updateUserProfile = async (req, res) => {
   try {
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
-      { $set: req.body },
-      // Without $set, if you pass req.body directly,
-      // MongoDB may try to replace the whole document, which is dangerous.
-      { new: true, runValidators: true }
-      //new: true makes it return the updated document
-      // Adding runValidators: true forces Mongoose to check schema
-      // validation rules when updating.
-    );
+    const updatedUser = await prisma.user.update({
+      where: { id: req.params.id },
+      data: req.body
+    });
 
     if (!updatedUser) {
       return res
@@ -90,7 +89,7 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await prisma.user.findUnique({ where: { email } });
 
     // checking if user exists or not
     if (!user)
@@ -110,7 +109,7 @@ export const login = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: user.id },
       process.env.JWT_SECRET || "your_jwt_secret",
       { expiresIn: "1d" }
     );
@@ -131,7 +130,7 @@ export const login = async (req, res) => {
 
 export const allUser = async (req, res) => {
   try {
-    const users = await User.find();
+    const users = await prisma.user.findMany();
     res.status(200).json(users);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -140,7 +139,7 @@ export const allUser = async (req, res) => {
 
 export const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user) {
       return res
         .status(404)
@@ -171,11 +170,10 @@ export const uploadProfilePhoto = async (req, res) => {
     });
     const userId = req.user.id;
 
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { photo: photoUrl.secure_url },
-      { new: true }
-    );
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { photo: photoUrl.secure_url }
+    });
 
     res.status(200).json({
       success: true,
@@ -200,7 +198,7 @@ export const sendVerificationOTP = async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.json({ success: false, message: "User already exists" });
     }
@@ -208,15 +206,11 @@ export const sendVerificationOTP = async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore[email] = { otp, expires: Date.now() + 5 * 60 * 1000 };
 
-    const msg = {
-      to: email,
-      from: process.env.SENDGRID_VERIFIED_SENDER,
-      subject: "Verify Your Email for MedKnock Registration",
-      text: `Your verification OTP is: ${otp}`,
-      html: `<h3>Welcome to MedKnock!<br>Your verification OTP is: <strong>${otp}</strong></h3>`,
-    };
-
-    await sgMail.send(msg);
+    await sendEmail(
+      email,
+      "Verify Your Email for MedKnock Registration",
+      `<h3>Welcome to MedKnock!<br>Your verification OTP is: <strong>${otp}</strong></h3>`
+    );
     console.log(`Verification OTP sent to ${email}`);
     res.json({ success: true, message: "Verification OTP sent to email" });
   } catch (error) {
@@ -244,7 +238,6 @@ export const verifyEmailOTP = async (req, res) => {
 
 //forgot password mail sender
 const otpStore = {};
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 export const sendMail = async (req, res) => {
   try {
@@ -254,7 +247,7 @@ export const sendMail = async (req, res) => {
       return res.json({ success: false, message: "Invalid email" });
     }
 
-    const user = await User.findOne({ email });
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.json({ success: false, message: "User not found" });
     }
@@ -262,17 +255,13 @@ export const sendMail = async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore[email] = { otp, expires: Date.now() + 5 * 60 * 1000 };
 
-    // --- Start: SendGrid Logic ---
-    const msg = {
-      to: email,
-      from: process.env.SENDGRID_VERIFIED_SENDER, // Use your verified sender
-      subject: "Your OTP Code for MedKnock",
-      text: `Your OTP is: ${otp}`,
-      html: `<h3>Thank you for visiting MedKnock.<br>Your OTP is: <strong>${otp}</strong></h3>`,
-    };
-
-    await sgMail.send(msg);
-    // --- End: SendGrid Logic ---
+    // --- Start: Twilio Email Logic ---
+    await sendEmail(
+      email,
+      "Your OTP Code for MedKnock",
+      `<h3>Thank you for visiting MedKnock.<br>Your OTP is: <strong>${otp}</strong></h3>`
+    );
+    // --- End: Twilio Email Logic ---
 
     console.log(`OTP Email sent to ${email} via SendGrid`);
     res.json({ success: true, message: "OTP sent to email" });
@@ -305,19 +294,23 @@ export const updatePassword = async (req, res) => {
       return res.json({ success: false, message: "Invalid or expired OTP" });
     }
 
-    const user = await User.findOne({ email });
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.json({ success: false, message: "User not found" });
     }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    user.password = hashedPassword;
-    await user.save();
+    
+    await prisma.user.update({
+      where: { email },
+      data: { password: hashedPassword }
+    });
+    
     console.log("password update");
     delete otpStore[email]; // clean up used OTP
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
     res.json({ success: true, message: "Password updated", token });

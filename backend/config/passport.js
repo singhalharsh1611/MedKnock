@@ -1,6 +1,6 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20'; 
-import User from "../models/userModel.js";
+import prisma from "./prismaClient.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -18,12 +18,12 @@ const passportSetup = () => {
         return done(new Error("No email found in Google profile"), null);
       }
 
-      let user = await User.findOne({ googleId: profile.id });
+      let user = await prisma.user.findFirst({ where: { googleId: profile.id } });
       if (user) {
         return done(null, user);
       }
 
-      user = await User.findOne({ email });
+      user = await prisma.user.findUnique({ where: { email } });
       if (user) {
         user.googleId = profile.id;
         if (!user.firstName && profile.name?.givenName) {
@@ -36,19 +36,18 @@ const passportSetup = () => {
         if (user.photo && user.photo.includes('github.com/shadcn') && profile.photos?.length) {
           user.photo = profile.photos[0].value;
         }
-        await user.save();
+        await prisma.user.update({ where: { id: user.id }, data: { googleId: profile.id, firstName: user.firstName, lastName: user.lastName, photo: user.photo } })
         return done(null, user);
       }
 
       // If no user exists, create a new one with the correct schema fields
-      const newUser = new User({
+      const newUser = await prisma.user.create({ data: {
         googleId: profile.id,
         email: email,
         firstName: profile.name?.givenName || '',
         lastName: profile.name?.familyName || '',
         photo: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : undefined,
-      });
-      await newUser.save();
+      } });
       return done(null, newUser);
 
     } catch (error) {
@@ -63,7 +62,7 @@ const passportSetup = () => {
 
   passport.deserializeUser(async (id, done) => {
     try {
-      const user = await User.findById(id);
+      const user = await prisma.user.findUnique({ where: { id } });
       done(null, user);
     } catch (err) {
       done(err, null);
@@ -72,3 +71,5 @@ const passportSetup = () => {
 };
 
 export default passportSetup;
+
+

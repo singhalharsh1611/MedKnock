@@ -2,38 +2,38 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Droplets, Edit, Trash2, AlertTriangle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Clock, Droplets, Edit, Trash2, AlertTriangle, CheckCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 
-export const PotionCardActive = ({
-    id,
+export const MedicineCard = ({
+  id,
   pillName,
   dosage,
   times,
   quantity,
-  isActive = true,
   isRefillDue = false,
+  canLog = false,
   onEdit,
   onDelete,
-  onToggleActive
+  onLogTaken,
+  missedTimes = [],
 }) => {
-  const { toast } = useToast();
 
-  const handleToggleActive = () => {
-    // console.log(id);
-    if (onToggleActive) {
-      onToggleActive(id);
+  const handleLogTaken = () => {
+    if (onLogTaken && canLog && quantity>0) {
+      onLogTaken(id);
+      toast.success(`${pillName} has been logged as taken ✨`)
     }
   };
 
   return (
 
-      <Card className="potion-card group">
+      <Card className="medicine-card group">
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
-            <Droplets className="h-5 w-5 text-magical-blue elixir-glow" />
+            <Droplets className="h-5 w-5 text-medical-blue medicine-glow" />
             <h3 className="font-bold text-lg text-foreground">{pillName}</h3>
             {isRefillDue && (
               <Badge variant="destructive" className="flex items-center gap-1">
@@ -45,7 +45,7 @@ export const PotionCardActive = ({
           <p className="text-muted-foreground mb-3">{dosage}</p>
 
           <div className="flex items-center gap-2 mb-4">
-            <Clock className="h-4 w-4 text-magical-purple" />
+            <Clock className="h-4 w-4 text-medical-purple" />
             <div className="flex gap-1 flex-wrap">
               {times.map((time, index) => (
                 <Badge key={index} variant="outline" className="text-xs">
@@ -60,33 +60,28 @@ export const PotionCardActive = ({
               Remaining: {quantity} doses
             </p>
           )}
+          {missedTimes.length > 0 ? (
+            <p className="text-sm text-red-500 font-medium flex items-center gap-1">
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+              Missed at: {missedTimes.join(", ")}
+            </p>
+          ) : (
+            <p className="text-sm text-green-500 font-medium flex items-center gap-1">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              None missed yet today
+            </p>
+          )}
         </div>
       </div>
 
-       <div className="flex gap-2">
+      <div className="flex gap-2">
         <Button
-          onClick={handleToggleActive}
-          className={isActive ? 'magical-button flex-1 bg-green-500' : 'button flex-1 bg-red-400'}
+          onClick={handleLogTaken}
+          className="medical-button flex-1"
+          disabled={!canLog || quantity<=0}
         >
-          {isActive ? 'Active' : 'Inactive'}
+          {canLog && quantity > 0 ? "Log as Taken" : "Not Available"}
         </Button>
-
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onEdit && onEdit(id)}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onDelete && onDelete(id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
       </div>
     </Card>
 

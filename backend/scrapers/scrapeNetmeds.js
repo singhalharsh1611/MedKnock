@@ -5,14 +5,27 @@ export async function scrapeNetmeds(medicineName) {
   let browser = null;
   let page = null;
   try {
-    browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({ 
+        headless: true,
+        args: ['--disable-gpu', '--disable-dev-shm-usage', '--no-sandbox']
+    });
     page = await browser.newPage();
 
+    // Block heavy resources to save massive CPU/RAM and speed up load times
+    await page.route('**/*', (route) => {
+        const type = route.request().resourceType();
+        if (['image', 'stylesheet', 'font', 'media', 'other'].includes(type)) {
+            route.abort();
+        } else {
+            route.continue();
+        }
+    });
+
     const searchUrl = `https://www.netmeds.com/products?q=${encodeURIComponent(medicineName)}`;
-    await page.goto(searchUrl, { waitUntil: "networkidle" });
+    await page.goto(searchUrl, { waitUntil: "domcontentloaded" });
 
     const cardSelector = ".product-card-container";
-    await page.waitForSelector(cardSelector, { timeout: 20000 });
+    await page.waitForSelector(cardSelector, { timeout: 15000 });
 
     const $ = cheerio.load(await page.content());
     const firstCard = $(cardSelector).first();

@@ -1,7 +1,4 @@
-import mongoose from "mongoose";
-import Schedule from "../models/scheduleModel.js";
-import DoseLog from "../models/doseLogModel.js";
-import User from "../models/userModel.js";
+import prisma from "../config/prismaClient.js";
 import { google } from "googleapis";
 import crypto from "crypto";
 
@@ -22,7 +19,6 @@ const getScheduleHash = (schedule) => {
   const key = `${schedule.pillName}|${schedule.times.join(",")}|${schedule.startDate}|${schedule.quantity}|${schedule.riskScore}`;
   return crypto.createHash("md5").update(key).digest("hex");
 };
-
 
 async function insertWithRetry(calendar, event, retries = 3) {
   for (let i = 0; i < retries; i++) {
@@ -64,12 +60,14 @@ async function deleteGoogleEventsForSchedule(user, schedule) {
   }
 
   schedule.googleEventIds = [];
-  await schedule.save();
+  await prisma.schedule.update({
+    where: { id: schedule.id },
+    data: { googleEventIds: [] }
+  });
 }
 
-
 export const syncDosesToGoogleCalendar = async (user) => {
-  const userId = user._id;
+  const userId = user.id;
   console.log(`--- Calendar Sync for user: ${userId} ---`);
 
   if (!user.googleCalendarToken || !user.googleRefreshToken) {
@@ -77,7 +75,9 @@ export const syncDosesToGoogleCalendar = async (user) => {
     return;
   }
 
-  const schedules = await Schedule.find({ userId, isActive: true });
+  const schedules = await prisma.schedule.findMany({
+    where: { userId, isActive: true }
+  });
   if (!schedules.length) return;
 
   const oAuth2Client = new google.auth.OAuth2(
@@ -99,7 +99,6 @@ export const syncDosesToGoogleCalendar = async (user) => {
       continue;
     }
 
-    // Clean up old events
     if (schedule.googleEventIds?.length) {
       await deleteGoogleEventsForSchedule(user, schedule);
     }
@@ -123,7 +122,6 @@ export const syncDosesToGoogleCalendar = async (user) => {
       const month = String(eventDate.getMonth() + 1).padStart(2, "0");
       const date = String(eventDate.getDate()).padStart(2, "0");
 
-      // Batch insert for this day's doses
       const eventPromises = [];
 
       for (let j = 0; j < dosesPerDay; j++) {
@@ -154,12 +152,18 @@ export const syncDosesToGoogleCalendar = async (user) => {
         }
       }
 
-      await sleep(500); // small pause to prevent rate-limit
+      await sleep(500);
     }
 
     schedule.googleEventIds = newEventIds;
     schedule.lastSyncedHash = currentHash;
-    await schedule.save();
+    await prisma.schedule.update({
+      where: { id: schedule.id },
+      data: {
+        googleEventIds: newEventIds,
+        lastSyncedHash: currentHash
+      }
+    });
   }
 
   console.log(`--- Calendar Sync Completed for user ${userId} ---`);
@@ -182,23 +186,27 @@ export const createSchedule = async (req, res, next) => {
       return res.status(400).json({ message: 'Times must be like ["07:30", "12:00"]' });
     }
 
-    const exist = await Schedule.findOne({ pillName, userId });
+    const exist = await prisma.schedule.findFirst({
+      where: { pillName, userId }
+    });
     if (exist) {
       return res.status(201).json({ success: false, message: "Schedule already exists" });
     }
 
-    const schedule = await Schedule.create({
-      userId,
-      pillName: pillName.trim(),
-      dosage: dosage?.trim() ?? "",
-      times: timesArr,
-      riskScore: Number.isFinite(riskScore) ? riskScore : 0,
-      quantity: Number.isFinite(quantity) ? quantity : 0,
-      startDate: startDate ? new Date(startDate) : undefined,
+    const schedule = await prisma.schedule.create({
+      data: {
+        userId,
+        pillName: pillName.trim(),
+        dosage: dosage?.trim() ?? "",
+        times: timesArr,
+        riskScore: Number.isFinite(riskScore) ? riskScore : 0,
+        quantity: Number.isFinite(quantity) ? quantity : 0,
+        startDate: startDate ? new Date(startDate) : undefined,
+      }
     });
 
-    const user = await User.findById(userId);
-    if (user.googleCalendarToken && user.googleRefreshToken) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user && user.googleCalendarToken && user.googleRefreshToken) {
       syncDosesToGoogleCalendar(user).catch((err) => console.error("Calendar sync failed:", err));
     }
 
@@ -215,18 +223,27 @@ export const getSchedules = async (req, res, next) => {
     
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    const user = await User.findById(userId).select("currentStreak");
-    const schedules = await Schedule.find({ userId }).sort({ createdAt: -1 });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { currentStreak: true }
+    });
+    
+    const schedules = await prisma.schedule.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' }
+    });
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    const todayLogs = await DoseLog.find({
-      userId,
-      timestamp: { $gte: todayStart, $lte: todayEnd },
-    }).lean();
+    const todayLogs = await prisma.doseLog.findMany({
+      where: {
+        userId,
+        timestamp: { gte: todayStart, lte: todayEnd },
+      }
+    });
 
     const logsBySchedule = {};
     for (const log of todayLogs) {
@@ -240,7 +257,7 @@ export const getSchedules = async (req, res, next) => {
 
     const items = schedules.map((schedule) => {
       const timesToday = schedule.times.map((t) => getTimeForToday(t));
-      const logs = logsBySchedule[schedule._id] || [];
+      const logs = logsBySchedule[schedule.id] || [];
 
       totalDosesToday += schedule.isActive ? schedule.times.length : 0;
       takenDosesToday += logs.filter((l) => l.status === "taken").length;
@@ -268,7 +285,7 @@ export const getSchedules = async (req, res, next) => {
         }
       }
 
-      return { ...schedule.toObject(), canLog, missedTimes };
+      return { ...schedule, canLog, missedTimes };
     });
 
     return res.status(200).json({
@@ -289,30 +306,33 @@ export const updateScheduleById = async (req, res, next) => {
     const { id } = req.params;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid schedule id" });
-    }
-
-    const schedule = await Schedule.findOne({ _id: id, userId });
+    const schedule = await prisma.schedule.findFirst({
+      where: { id, userId }
+    });
     if (!schedule) return res.status(404).json({ message: "Schedule not found" });
 
     const { pillName, dosage, times, riskScore, quantity, startDate } = req.body;
-    if (pillName !== undefined) schedule.pillName = String(pillName).trim();
-    if (dosage !== undefined) schedule.dosage = String(dosage).trim();
-    if (Array.isArray(times) && times.length > 0) schedule.times = times.map(String);
-    if (riskScore !== undefined && typeof riskScore === "number") schedule.riskScore = riskScore;
-    if (quantity !== undefined && !isNaN(quantity)) schedule.quantity = Number(quantity);
+    
+    const updateData = {};
+    if (pillName !== undefined) updateData.pillName = String(pillName).trim();
+    if (dosage !== undefined) updateData.dosage = String(dosage).trim();
+    if (Array.isArray(times) && times.length > 0) updateData.times = times.map(String);
+    if (riskScore !== undefined && typeof riskScore === "number") updateData.riskScore = riskScore;
+    if (quantity !== undefined && !isNaN(quantity)) updateData.quantity = Number(quantity);
     if (startDate !== undefined && !isNaN(new Date(startDate).getTime()))
-      schedule.startDate = new Date(startDate);
+      updateData.startDate = new Date(startDate);
 
-    await schedule.save();
+    const updatedSchedule = await prisma.schedule.update({
+      where: { id },
+      data: updateData
+    });
 
-    const user = await User.findById(userId);
-    if (user.googleCalendarToken && user.googleRefreshToken) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user && user.googleCalendarToken && user.googleRefreshToken) {
       syncDosesToGoogleCalendar(user).catch((err) => console.error("Sync failed:", err));
     }
 
-    return res.status(200).json(schedule);
+    return res.status(200).json(updatedSchedule);
   } catch (err) {
     next(err);
   }
@@ -325,15 +345,17 @@ export const deleteScheduleById = async (req, res, next) => {
     const { id } = req.params;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    const schedule = await Schedule.findOne({ _id: id, userId });
+    const schedule = await prisma.schedule.findFirst({
+      where: { id, userId }
+    });
     if (!schedule) return res.status(404).json({ message: "Not found" });
 
-    const user = await User.findById(userId);
-    if (user.googleCalendarToken && user.googleRefreshToken) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user && user.googleCalendarToken && user.googleRefreshToken) {
       await deleteGoogleEventsForSchedule(user, schedule);
     }
 
-    await Schedule.deleteOne({ _id: id, userId });
+    await prisma.schedule.delete({ where: { id } });
     return res.status(200).json({ success: true, message: "Deleted", id });
   } catch (err) {
     next(err);
@@ -345,22 +367,30 @@ export const toggleScheduleActive = async (req, res, next) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    const schedule = await Schedule.findOne({ _id: id, userId });
+    
+    const schedule = await prisma.schedule.findFirst({
+      where: { id, userId }
+    });
     if (!schedule) return res.status(404).json({ message: "Schedule not found" });
 
-    schedule.isActive = !schedule.isActive;
-    await schedule.save();
+    const updatedSchedule = await prisma.schedule.update({
+      where: { id },
+      data: { isActive: !schedule.isActive }
+    });
 
-    const user = await User.findById(userId);
-    if (user.googleCalendarToken && user.googleRefreshToken) {
-      if (schedule.isActive) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user && user.googleCalendarToken && user.googleRefreshToken) {
+      if (updatedSchedule.isActive) {
         syncDosesToGoogleCalendar(user).catch(console.error);
       } else {
-        deleteGoogleEventsForSchedule(user, schedule).catch(console.error);
+        deleteGoogleEventsForSchedule(user, updatedSchedule).catch(console.error);
       }
     }
 
-    const schedules = await Schedule.find({ userId }).sort({ createdAt: -1 });
+    const schedules = await prisma.schedule.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' }
+    });
     return res.status(200).json({ success: true, message: "Toggled", schedules });
   } catch (err) {
     next(err);
@@ -373,11 +403,12 @@ export const getScheduleById = async (req, res, next) => {
     const userId = req.user?.id;
     const { id } = req.params;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
-    if (!mongoose.Types.ObjectId.isValid(id))
-      return res.status(400).json({ message: "Invalid schedule id" });
-
-    const schedule = await Schedule.findOne({ _id: id, userId });
+    
+    const schedule = await prisma.schedule.findFirst({
+      where: { id, userId }
+    });
     if (!schedule) return res.status(404).json({ message: "Schedule not found" });
+    
     return res.status(200).json(schedule);
   } catch (err) {
     next(err);

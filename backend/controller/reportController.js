@@ -1,14 +1,16 @@
-import Report from "../models/reportModel.js";
+import prisma from "../config/prismaClient.js";
 import { Readable } from "stream";
 import dotenv from "dotenv";
+import { callLLM } from "../utils/llmClient.js";
 import cloudinary from "../config/cloudinaryConfig.js";
 dotenv.config();
 
 
 export const getUserReports = async (req, res) => {
   try {
-    const reports = await Report.find({ userId: req.user.id }).sort({
-      createdAt: -1,
+    const reports = await prisma.report.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: "desc" },
     });
     res.status(200).json({ success: true, reports });
   } catch (err) {
@@ -61,53 +63,28 @@ export const analyzeReport = async (req, res) => {
             If the file is not a medical report, return a JSON object with a single key "error" and the value "This file does not appear to be a valid medical report."
         `;
 
-    const url =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
-
-    const apiResponse = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-goog-api-key": process.env.GEMINI_API_KEY,
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { inline_data: { mime_type: mimeType, data: base64Data } },
-              { text: prompt },
-            ],
-          },
-        ],
-      }),
-    });
-    if (!apiResponse.ok) {
-      const errorData = await apiResponse.json();
-      throw new Error(
-        `Gemini API failed: ${apiResponse.status} - ${JSON.stringify(
-          errorData
-        )}`
-      );
+    let analysisText = await callLLM([
+        { inline_data: { mime_type: mimeType, data: base64Data } },
+        { text: prompt }
+    ]);
+    if (!analysisText) {
+        analysisText = '{"error": "Could not interpret this report."}';
     }
-    console.log("gemini respond");
-
-    const data = await apiResponse.json();
-   
-    let analysisText =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      '{"error": "Could not interpret this report."}';
+    console.log("LLM respond");
     analysisText = analysisText
       .replace(/```json/g, "")
       .replace(/```/g, "")
       .trim();
 
     
-    const newReport = await Report.create({
-      userId, 
-      fileName: req.file.originalname,
-      cloudinaryUrl: cloudinaryUrl,
-      summary: analysisText, 
-      analyzed: true,
+    const newReport = await prisma.report.create({
+      data: {
+        userId, 
+        fileName: req.file.originalname,
+        cloudinaryUrl: cloudinaryUrl,
+        summary: analysisText, 
+        analyzed: true,
+      }
     });
 
     res.status(201).json({ success: true, report: newReport });
@@ -125,7 +102,7 @@ export const analyzeReport = async (req, res) => {
 // Controller to delete a report
 export const deleteReport = async (req, res) => {
   try {
-    const report = await Report.findById(req.params.id);
+    const report = await prisma.report.findUnique({ where: { id: req.params.id } });
 
     if (!report) {
       return res
@@ -142,7 +119,7 @@ export const deleteReport = async (req, res) => {
 
    
 
-    await report.deleteOne();
+    await prisma.report.delete({ where: { id: report.id } });
 
     res.status(200).json({ success: true, message: "Report deleted" });
   } catch (err) {
@@ -163,7 +140,7 @@ export const changeReportFileName = async (req, res) => {
         .json({ success: false, message: "New file name is required" });
     }
 
-    const report = await Report.findById(id);
+    const report = await prisma.report.findUnique({ where: { id } });
 
     if (!report) {
       return res
@@ -179,13 +156,15 @@ export const changeReportFileName = async (req, res) => {
     }
 
     // Update and save new file name
-    report.fileName = newFileName.trim();
-    await report.save();
+    const updatedReport = await prisma.report.update({
+      where: { id: report.id },
+      data: { fileName: newFileName.trim() }
+    });
 
     res.status(200).json({
       success: true,
       message: "File name updated successfully",
-      report,
+      report: updatedReport,
     });
   } catch (err) {
     console.error("Change File Name Error:", err);
@@ -194,4 +173,3 @@ export const changeReportFileName = async (req, res) => {
       .json({ success: false, message: "Failed to update file name" });
   }
 };
-

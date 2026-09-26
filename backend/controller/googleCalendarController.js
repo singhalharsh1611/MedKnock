@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import { google } from "googleapis";
-import User from "../models/userModel.js";
+import prisma from "../config/prismaClient.js";
 import { oAuth2Client, SCOPES } from "../config/googleCalendar.js";
 import { syncDosesToGoogleCalendar } from "./scheduleController.js";
 
@@ -42,15 +42,14 @@ export const googleCalendarCallback = async (req, res) => {
 
     const { tokens } = await oauth2Client.getToken(code);
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
         googleCalendarToken: tokens.access_token,
         ...(tokens.refresh_token && { googleRefreshToken: tokens.refresh_token }),
         isGoogleConnected: true,
       },
-      { new: true }
-    );
+    });
 
     await syncDosesToGoogleCalendar(user);
 
@@ -68,14 +67,17 @@ export const googleCalendarCallback = async (req, res) => {
 // Step 3: Disconnect Google Calendar
 export const disconnectGoogleCalendar = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    user.googleCalendarToken = null;
-    user.googleRefreshToken = null;
-    user.isGoogleConnected = false;
-
-    await user.save();
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        googleCalendarToken: null,
+        googleRefreshToken: null,
+        isGoogleConnected: false,
+      },
+    });
 
     res.json({ success: true, message: "Disconnected from Google Calendar" });
   } catch (error) {

@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
 const ReportDocument = ({ data }) => {
     if (!data || !data.stats) return null;
     
-    const { userName, elixirs, stats } = data;
+    const { userName, medicines, stats } = data;
     const { overview, daily, meds, adherenceData } = stats;
 
     return (
@@ -132,17 +132,17 @@ const ReportDocument = ({ data }) => {
                     <View style={styles.statCard}><Text style={[styles.statValue, { color: '#4ade80' }]}>{overview?.totals?.taken ?? 0}</Text><Text style={styles.statLabel}>Doses Taken</Text></View>
                     <View style={styles.statCard}><Text style={[styles.statValue, { color: '#facc15' }]}>{overview?.totals?.missed ?? 0}</Text><Text style={styles.statLabel}>Doses Missed</Text></View>
                     <View style={styles.statCard}><Text style={[styles.statValue, { color: '#60a5fa' }]}>{overview?.adherence?.toFixed(1) ?? 0}%</Text><Text style={styles.statLabel}>Adherence</Text></View>
-                    <View style={styles.statCard}><Text style={[styles.statValue, { color: '#a78bfa' }]}>{elixirs?.length ?? 0}</Text><Text style={styles.statLabel}>Active Meds</Text></View>
+                    <View style={styles.statCard}><Text style={[styles.statValue, { color: '#a78bfa' }]}>{medicines?.length ?? 0}</Text><Text style={styles.statLabel}>Active Meds</Text></View>
                 </View>
 
                 {/* Medication Schedule */}
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Current Medication Schedule</Text>
-                  {elixirs.map((elixir, index) => (
+                  {medicines.map((medicine, index) => (
                       <View key={index} style={[styles.tableRow, index % 2 === 1 && styles.tableRowAlternate]}>
-                          <Text style={[styles.tableCell, { flex: 2, fontFamily: 'Helvetica-Bold' }]}>{elixir.pillName}</Text>
-                          <Text style={[styles.tableCell, { flex: 2 }]}>Dosage: {elixir.dosage}</Text>
-                          <Text style={[styles.tableCell, { flex: 3 }]}>Times: {elixir.times.join(', ')}</Text>
+                          <Text style={[styles.tableCell, { flex: 2, fontFamily: 'Helvetica-Bold' }]}>{medicine.pillName}</Text>
+                          <Text style={[styles.tableCell, { flex: 2 }]}>Dosage: {medicine.dosage}</Text>
+                          <Text style={[styles.tableCell, { flex: 3 }]}>Times: {medicine.times.join(', ')}</Text>
                       </View>
                   ))}
                 </View>
@@ -198,7 +198,7 @@ const ReportDocument = ({ data }) => {
                         </View>
                         {meds.map((med, index) => (
                             <View key={index} style={[styles.tableRow, index % 2 === 1 && styles.tableRowAlternate]}>
-                                <Text style={[styles.tableCell, { width: '50%' }]}>{med._id}</Text>
+                                <Text style={[styles.tableCell, { width: '50%' }]}>{med.id}</Text>
                                 <Text style={[styles.tableCell, { width: '25%', textAlign: 'center' }]}>{med.taken}</Text>
                                 <Text style={[styles.tableCell, { width: '25%', textAlign: 'center' }]}>{med.missed}</Text>
                             </View>

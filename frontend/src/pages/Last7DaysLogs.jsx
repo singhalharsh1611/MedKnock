@@ -39,7 +39,7 @@ export default function Last7DaysLogs() {
       ) : (
         <div className="space-y-3">
           {logs.map((log) => (
-            <Card key={log._id} className="p-4 flex justify-between items-center">
+            <Card key={log.id} className="p-4 flex justify-between items-center">
               <div>
                 <p className="font-semibold">{log.medicineName}</p>
                 <p className="text-sm text-gray-500">{log.dosage}</p>

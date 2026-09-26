@@ -135,7 +135,7 @@ export const ReportsPage = () => {
         if (data.success) {
           // Map DB data to the state structure
           const formatted = data.reports.map((r) => ({
-            id: r._id,
+            id: r.id,
             fileName: r.fileName,
             status: "success", // Already analyzed
             analysis: r.summary,
@@ -199,7 +199,7 @@ export const ReportsPage = () => {
 
       // --- REPLACE TEMPORARY REPORT WITH FINAL DB DATA ---
       const finalReport = {
-        id: data.report._id, // Use the real DB ID
+        id: data.report.id, // Use the real DB ID
         fileName: data.report.fileName,
         status: "success",
         analysis: data.report.summary,

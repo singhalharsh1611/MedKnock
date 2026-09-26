@@ -279,7 +279,7 @@ export default function ProfilePage() {
               variant="outline"
               onClick={() => {
                 window.open(
-                  "https://api.whatsapp.com/send/?phone=%2B14155238886&text=join+ice-plane&type=phone_number&app_absent=0",
+                  "https://wa.me/+17372508034?text=join%20twilio-trial",
                   "_blank"
                 );
               }}
@@ -289,7 +289,7 @@ export default function ProfilePage() {
 
             <div className="mt-4 flex justify-center p-3 rounded-lg shadow-sm">
               <QRCode
-                value="https://api.whatsapp.com/send/?phone=%2B14155238886&text=join+ice-plane&type=phone_number&app_absent=0"
+                value="https://wa.me/+17372508034?text=join%20twilio-trial"
                 size={150}
               />
             </div>

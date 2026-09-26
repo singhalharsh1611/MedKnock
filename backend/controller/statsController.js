@@ -1,7 +1,4 @@
-
-import mongoose from 'mongoose';
-import DoseLog from '../models/doseLogModel.js';
-import Schedule from '../models/scheduleModel.js';
+import prisma from "../config/prismaClient.js";
 
 // Helper: parse date-range query and timezone
 const parseRange = (req) => {
@@ -16,37 +13,26 @@ const parseRange = (req) => {
 const toDateKeyISO = (date, tz = 'Asia/Kolkata') =>
   new Date(date).toLocaleDateString('en-CA', { timeZone: tz });
 
-
-
-
 // 1) Overview: total taken / missed / adherence
 export const getOverview = async (req, res) => {
-
-
-const userId = new mongoose.Types.ObjectId(req.user._id || req.user.id);
-
+  const userId = req.user.id || req.user._id;
   const { start, end } = parseRange(req);
 
-  const match = {
-    userId,
-    timestamp: { $gte: start, $lte: end },
-  };
-
-  const agg = [
-    { $match: match },
-    {
-      $group: {
-        _id: '$status',
-        count: { $sum: 1 },
-      },
+  const rows = await prisma.doseLog.groupBy({
+    by: ['status'],
+    where: {
+      userId,
+      timestamp: { gte: start, lte: end },
     },
-  ];
+    _count: {
+      status: true,
+    },
+  });
 
-  const rows = await DoseLog.aggregate(agg);
   const totals = { taken: 0, missed: 0 };
   rows.forEach((r) => {
-    if (r._id === 'taken') totals.taken = r.count;
-    else if (r._id === 'missed') totals.missed = r.count;
+    if (r.status === 'taken') totals.taken = r._count.status;
+    else if (r.status === 'missed') totals.missed = r._count.status;
   });
 
   const total = totals.taken + totals.missed;
@@ -57,26 +43,28 @@ const userId = new mongoose.Types.ObjectId(req.user._id || req.user.id);
 
 // 2) Daily time series
 export const getDaily = async (req, res) => {
-  const userId = new mongoose.Types.ObjectId(req.user.id);
+  const userId = req.user.id || req.user._id;
   const { start, end, tz } = parseRange(req);
 
-  const agg = [
-    { $match: { userId, timestamp: { $gte: start, $lte: end } } },
-    {
-      $group: {
-        _id: {
-          $dateToString: { format: '%Y-%m-%d', date: '$timestamp'},
-        },
-        taken: { $sum: { $cond: [{ $eq: ['$status', 'taken'] }, 1, 0] } },
-        missed: { $sum: { $cond: [{ $eq: ['$status', 'missed'] }, 1, 0] } },
-      },
+  const logs = await prisma.doseLog.findMany({
+    where: {
+      userId,
+      timestamp: { gte: start, lte: end },
     },
-    { $sort: { _id: 1 } },
-  ];
+    select: {
+      timestamp: true,
+      status: true,
+    }
+  });
 
-  const rows = await DoseLog.aggregate(agg);
+  const map = new Map();
+  logs.forEach(log => {
+    const day = toDateKeyISO(log.timestamp, tz);
+    if (!map.has(day)) map.set(day, { taken: 0, missed: 0 });
+    if (log.status === 'taken') map.get(day).taken++;
+    if (log.status === 'missed') map.get(day).missed++;
+  });
 
-  // Fill missing days with 0 values
   const days = [];
   let cur = new Date(start);
   while (cur <= end) {
@@ -84,7 +72,6 @@ export const getDaily = async (req, res) => {
     cur.setDate(cur.getDate() + 1);
   }
 
-  const map = new Map(rows.map((r) => [r._id, r]));
   const series = days.map((day) => ({
     date: day,
     taken: map.get(day)?.taken || 0,
@@ -96,44 +83,47 @@ export const getDaily = async (req, res) => {
 
 // 3) Per medication stats (taken/missed per pillName)
 export const getMedicationStats = async (req, res) => {
-  const userId = new mongoose.Types.ObjectId(req.user.id);
+  const userId = req.user.id || req.user._id;
   const { start, end } = parseRange(req);
 
-  const agg = [
-    { $match: { userId, timestamp: { $gte: start, $lte: end } } },
-    {
-      $lookup: {
-        from: 'schedules',
-        localField: 'scheduleId',
-        foreignField: '_id',
-        as: 'schedule',
-      },
+  const logs = await prisma.doseLog.findMany({
+    where: {
+      userId,
+      timestamp: { gte: start, lte: end },
     },
-    { $unwind: '$schedule' },
-    {
-      $group: {
-        _id: '$schedule.pillName',
-        taken: { $sum: { $cond: [{ $eq: ['$status', 'taken'] }, 1, 0] } },
-        missed: { $sum: { $cond: [{ $eq: ['$status', 'missed'] }, 1, 0] } },
-      },
-    },
-    { $sort: { missed: -1 } },
-  ];
+    include: {
+      schedule: true,
+    }
+  });
 
-  const rows = await DoseLog.aggregate(agg);
+  const medMap = new Map();
+  logs.forEach(log => {
+    const pillName = log.schedule?.pillName || 'Unknown';
+    if (!medMap.has(pillName)) medMap.set(pillName, { _id: pillName, taken: 0, missed: 0 });
+    if (log.status === 'taken') medMap.get(pillName).taken++;
+    if (log.status === 'missed') medMap.get(pillName).missed++;
+  });
+
+  const rows = Array.from(medMap.values()).sort((a, b) => b.missed - a.missed);
   res.json({ meds: rows });
 };
 
 // 4) Current streak (consecutive days with >=1 'taken', backward from today)
 export const getStreak = async (req, res) => {
-  const userId = new mongoose.Types.ObjectId(req.user.id);
+  const userId = req.user.id || req.user._id;
   const tz = req.query.tz || 'Asia/Kolkata';
 
   const cutoff = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
-  const docs = await DoseLog.find(
-    { userId, status: 'taken', timestamp: { $gte: cutoff } },
-    { timestamp: 1 }
-  ).lean();
+  const docs = await prisma.doseLog.findMany({
+    where: {
+      userId,
+      status: 'taken',
+      timestamp: { gte: cutoff },
+    },
+    select: {
+      timestamp: true,
+    }
+  });
 
   const takenDays = new Set(docs.map((d) => toDateKeyISO(d.timestamp, tz)));
 
@@ -149,12 +139,17 @@ export const getStreak = async (req, res) => {
 
 // 5) Upcoming scheduled doses in next N hours
 export const getUpcoming = async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.id || req.user._id;
   const windowHours = Number(req.query.windowHours || 6);
   const tz = req.query.tz || 'Asia/Kolkata';
 
   const now = new Date();
-  const schedules = await Schedule.find({ userId, isActive: true }).lean();
+  const schedules = await prisma.schedule.findMany({
+    where: {
+      userId,
+      isActive: true,
+    }
+  });
 
   const upcoming = [];
   for (const s of schedules) {
@@ -164,7 +159,7 @@ export const getUpcoming = async (req, res) => {
 
       if (today >= now && today - now <= windowHours * 3600 * 1000) {
         upcoming.push({
-          scheduleId: s._id,
+          scheduleId: s.id || s._id,
           pillName: s.pillName,
           time: timeStr,
           at: today.toISOString(),

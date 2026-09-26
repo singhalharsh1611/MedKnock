@@ -28,7 +28,7 @@ router.get('/google/callback', passport.authenticate('google', {
     failureRedirect: `${process.env.FRONTEND_URL}`
 }), (req, res) => {
     if (req.user) {
-        const token = jwt.sign({ userId: req.user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ userId: req.user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
         // Redirect with token in query param
         res.redirect(`${process.env.FRONTEND_URL}/google-success?token=${token}`);
     } else {

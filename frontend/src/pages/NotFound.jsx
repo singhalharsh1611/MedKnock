@@ -56,7 +56,7 @@ const NotFound = () => {
     }}
   >
     <div className="flex justify-center mb-6">
-      <Sparkles className="h-16 w-16 text-magical-purple elixir-glow" />
+      <Sparkles className="h-16 w-16 text-medical-purple medicine-glow" />
     </div>
 
     <h1 className="text-4xl font-bold text-foreground mb-4">404</h1>
@@ -64,11 +64,11 @@ const NotFound = () => {
       Page Not Found
     </h2>
     <p className="text-muted-foreground mb-8">
-      It seems this page has vanished into the magical mist. Let's get back
-      to the grimoire.
+      It seems this page has vanished into the medical mist. Let's get back
+      to the medications.
     </p>
 
-    <Button asChild className="magical-button">
+    <Button asChild className="medical-button">
       <a href="/" className="flex items-center gap-2">
         <Home className="h-4 w-4" />
         Return to Dashboard

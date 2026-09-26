@@ -1,5 +1,5 @@
-import { sendNotification } from "../config/firebaseNotifications.js";
-import User from "../models/userModel.js";
+import { sendNotification } from "../utils/pushClient.js";
+import prisma from "../config/prismaClient.js";
 
 export const saveFcmToken = async (req, res, next) => {
     try {
@@ -11,11 +11,10 @@ export const saveFcmToken = async (req, res, next) => {
         }
 
         // Find the user and update their fcmToken field
-        const user = await User.findByIdAndUpdate(
-            userId,
-            { fcmToken: fcmToken },
-            { new: true } // Return the updated document
-        );
+        const user = await prisma.user.update({
+            where: { id: userId },
+            data: { fcmToken: fcmToken }
+        }).catch(() => null);
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -30,13 +29,13 @@ export const saveFcmToken = async (req, res, next) => {
 
 export const testNotification = async (req, res, next) => {
     try {
-        const user = await User.findById(req.user?.id);
+        const user = await prisma.user.findUnique({ where: { id: req.user?.id } });
 
         if (!user || !user.fcmToken) {
             return res.status(404).json({ message: 'User or FCM token not found.' });
         }
 
-        const title = "Alchemist's Test ✨";
+        const title = "MedKnock Test ✨";
         const body = "Your connection to the arcane realm is working perfectly!";
 
         await sendNotification(user.fcmToken, title, body);
@@ -46,3 +45,4 @@ export const testNotification = async (req, res, next) => {
         next(err);
     }
 };
+

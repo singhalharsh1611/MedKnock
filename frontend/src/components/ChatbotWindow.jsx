@@ -135,14 +135,14 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
     )}
 <Card
   className={`
-    fixed bottom-4 right-4 w-[90vw] max-w-none h-[80vh] flex flex-col shadow-2xl border-2 border-magical-purple/30 bg-card/95 backdrop-blur-sm transition-all duration-300 z-50
+    fixed bottom-4 right-4 w-[90vw] max-w-none h-[80vh] flex flex-col shadow-2xl border-2 border-medical-purple/30 bg-card/95 backdrop-blur-sm transition-all duration-300 z-50
     ${isMaximized ? 'w-[80vw] h-[80vh] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg' : 'sm:w-96 md:h-[500px]'}
   `}
 >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-magical-purple/20 to-magical-blue/20 rounded-t-lg">
+      <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-medical-purple/20 to-medical-blue/20 rounded-t-lg">
         <div className="flex items-center gap-2">
-          <Bot className="h-5 w-5 text-magical-purple" />
+          <Bot className="h-5 w-5 text-medical-purple" />
           <h3 className="font-semibold text-foreground">AI Wellness Assistant</h3>
         </div>
         <div><Button variant="ghost" size="sm" onClick={onClose}>
@@ -169,14 +169,14 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
                 }`}
             >
               {message.sender === 'bot' && (
-                <div className="w-8 h-8 rounded-full bg-magical-purple/20 flex items-center justify-center flex-shrink-0">
-                  <Bot className="h-4 w-4 text-magical-purple" />
+                <div className="w-8 h-8 rounded-full bg-medical-purple/20 flex items-center justify-center flex-shrink-0">
+                  <Bot className="h-4 w-4 text-medical-purple" />
                 </div>
               )}
 
               <div
                 className={`max-w-[75%] p-3 rounded-lg ${message.sender === 'user'
-                  ? 'bg-magical-purple text-white ml-auto'
+                  ? 'bg-medical-purple text-white ml-auto'
                   : 'bg-muted text-foreground'
                   }`}
               >
@@ -194,12 +194,26 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
               </div>
 
               {message.sender === 'user' && (
-                <div className="w-8 h-8 rounded-full bg-magical-gold/20 flex items-center justify-center flex-shrink-0">
-                  <User className="h-4 w-4 text-magical-gold" />
+                <div className="w-8 h-8 rounded-full bg-medical-gold/20 flex items-center justify-center flex-shrink-0">
+                  <User className="h-4 w-4 text-medical-gold" />
                 </div>
               )}
             </div>
           ))}
+
+          {isLoading && (
+            <div className="flex gap-3 justify-start">
+              <div className="w-8 h-8 rounded-full bg-medical-purple/20 flex items-center justify-center flex-shrink-0">
+                <Bot className="h-4 w-4 text-medical-purple" />
+              </div>
+              <div className="bg-muted text-foreground p-4 rounded-lg flex items-center gap-1.5 h-[44px]">
+                <div className="w-2 h-2 rounded-full bg-medical-purple/60 animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 rounded-full bg-medical-purple/60 animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-2 h-2 rounded-full bg-medical-purple/60 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
@@ -213,11 +227,12 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
             onKeyPress={handleKeyPress}
             placeholder={isListening ? "Listening..." : "Ask me about your wellness..."}
             className="flex-1"
+            disabled={isLoading}
           />
           <Button onClick={handleListen} size="icon" variant="outline" disabled={isLoading || isListening}>
             <Mic className={`h-4 w-4 ${isListening ? 'text-red-500 animate-pulse' : ''}`} />
           </Button>
-          <Button onClick={handleSendMessage} size="sm" className="magical-button">
+          <Button onClick={handleSendMessage} size="sm" className="medical-button" disabled={isLoading}>
             <Send className="h-4 w-4" />
           </Button>
         </div>

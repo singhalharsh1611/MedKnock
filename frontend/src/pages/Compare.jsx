@@ -42,7 +42,7 @@ const ShadcnSelect = ({ value, onChange, disabled, options, placeholder }) => (
       value={value}
       onChange={onChange}
       disabled={disabled}
-      className="w-full h-10 pl-3 pr-10 text-base border rounded-lg appearance-none focus:ring-2 focus:ring-magical-purple bg-card text-card-foreground"
+      className="w-full h-10 pl-3 pr-10 text-base border rounded-lg appearance-none focus:ring-2 focus:ring-medical-purple bg-card text-card-foreground"
     >
       {options.length === 0 ? (
         <option className="text-black bg-white">{placeholder}</option>
@@ -80,8 +80,8 @@ const PriceCard = ({ result }) => {
         <div className="text-center">
           <p className="font-bold text-lg text-foreground mb-2 truncate">{result.productName}</p>
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Tag className="h-5 w-5 text-magical-purple" />
-            <p className="font-bold text-2xl text-indigo-600 dark:text-magical-purple">
+            <Tag className="h-5 w-5 text-medical-purple" />
+            <p className="font-bold text-2xl text-indigo-600 dark:text-medical-purple">
               {result.price || "N/A"}
             </p>
           </div>
@@ -98,6 +98,7 @@ const PriceCard = ({ result }) => {
 
 const Compare = () => {
   const [schedules, setSchedules] = useState([]);
+  const [isSchedulesLoaded, setIsSchedulesLoaded] = useState(false);
   const [selectedPill, setSelectedPill] = useState("");
   const [comparisonResults, setComparisonResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -107,10 +108,14 @@ const Compare = () => {
   // Load user schedules on mount
   useEffect(() => {
     fetchUserSchedules()
-      .then((data) => setSchedules(data))
-      .catch(() =>
-        setError("Could not load schedules. Please make sure you are logged in.")
-      );
+      .then((data) => {
+        setSchedules(data);
+        setIsSchedulesLoaded(true);
+      })
+      .catch(() => {
+        setError("Could not load schedules. Please make sure you are logged in.");
+        setIsSchedulesLoaded(true);
+      });
   }, []);
 
   const handleSearch = async () => {
@@ -129,7 +134,7 @@ const Compare = () => {
       const data = await fetchPriceComparison(selectedPill);
       setComparisonResults(data.results);
     } catch {
-      setError(`Failed to get prices for ${selectedPill}. The alchemists are busy.`);
+      setError(`Failed to get prices for ${selectedPill}. The medicals are busy.`);
     } finally {
       clearInterval(interval);
       setProgress(100);
@@ -145,7 +150,7 @@ const Compare = () => {
         {/* Dropdown */}
         <Card className="mb-4 max-w-sm">
           <label htmlFor="pill-select" className="block text-lg font-medium text-card-foreground mb-2">
-            Select a Potion to Compare Prices
+            Select a Medicine to Compare Prices
           </label>
           <ShadcnSelect
             value={selectedPill}
@@ -155,7 +160,7 @@ const Compare = () => {
             }}
             disabled={schedules.length === 0 || isLoading}
             options={scheduleOptions}
-            placeholder="Loading your potions..."
+            placeholder={!isSchedulesLoaded ? "Loading your medicines..." : schedules.length === 0 ? "No medicines scheduled" : "Select a medicine"}
           />
         </Card>
 
@@ -170,7 +175,7 @@ const Compare = () => {
             onKeyDown={(e) => {
               if (e.key === "Enter") handleSearch(); // Trigger search on Enter
             }}
-            className="flex-1 max-w-xs px-3 py-2 border rounded-lg text-card-foreground bg-card focus:ring-2 focus:ring-magical-purple"
+            className="flex-1 max-w-xs px-3 py-2 border rounded-lg text-card-foreground bg-card focus:ring-2 focus:ring-medical-purple"
           />
           <Button onClick={handleSearch} disabled={!selectedPill || isLoading} className="h-10">
             Search

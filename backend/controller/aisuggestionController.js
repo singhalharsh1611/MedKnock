@@ -1,7 +1,6 @@
-import mongoose from "mongoose";
-import DoseLog from "../models/doseLogModel.js";
-import Schedule from "../models/scheduleModel.js";
+import prisma from "../config/prismaClient.js";
 import fetch from "node-fetch";
+import { callLLM } from "../utils/llmClient.js";
 
 // Helper
 const toDateKeyISO = (date, tz = "Asia/Kolkata") =>
@@ -9,17 +8,19 @@ const toDateKeyISO = (date, tz = "Asia/Kolkata") =>
 
 export const getAISuggestions = async (req, res) => {
   try {
-    const userId = new mongoose.Types.ObjectId(req.user.id);
+    const userId = req.user.id;
     const tz = req.query.tz || "Asia/Kolkata";
     const now = new Date();
 
     // 1️1 Fetch all user data
     const [schedules, doseLogs] = await Promise.all([
-      Schedule.find({ userId }).lean(),
-      DoseLog.find({
-        userId,
-        timestamp: { $gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) }, // last 7 days
-      }).lean(),
+      prisma.schedule.findMany({ where: { userId } }),
+      prisma.doseLog.findMany({
+        where: {
+          userId,
+          timestamp: { gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) }, // last 7 days
+        },
+      }),
     ]);
 
     if (schedules.length === 0) {
@@ -66,7 +67,7 @@ export const getAISuggestions = async (req, res) => {
     }
     for (const log of doseLogs) {
       const schedule = schedules.find(
-        (s) => s._id.toString() === log.scheduleId?.toString()
+        (s) => s.id.toString() === log.scheduleId?.toString()
       );
       if (!schedule) continue;
       const m = medsMap[schedule.pillName];
@@ -74,7 +75,7 @@ export const getAISuggestions = async (req, res) => {
       if (log.status === "missed") m.missed++;
 
       // to optimise n**2 to n ,  we can create map of schedule then find by log sch id
-      // const scheduleMap = Object.fromEntries(schedules.map(s => [s._id.toString(), s]));
+      // const scheduleMap = Object.fromEntries(schedules.map(s => [s.id.toString(), s]));
       // const schedule = scheduleMap[log.scheduleId?.toString()];
 
     }
@@ -104,7 +105,7 @@ export const getAISuggestions = async (req, res) => {
       else break;
     }
 
-    // 6️⃣ Prepare detailed data summary for Gemini
+    // 6️⃣ Prepare detailed data summary for LLM
     const dataSummary = `
 User 7-Day Adherence Summary:
 - Overall adherence: ${adherence.toFixed(1)}%
@@ -125,7 +126,7 @@ ${meds
         )
         .join("\n")}
 `;
-    // This builds a structured prompt that tells Gemini:
+    // This builds a structured prompt that tells LLM:
     const prompt = `
 You are an expert digital medication coach.
 
@@ -142,27 +143,9 @@ Respond in the format:
 5. **<suggestion>**
 `;
 
-    // 7️⃣ Call Gemini API
+    // 7️⃣ Call LLM
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Gemini API error ${response.status}: ${errorText}`);
-    }
-
-
-    const data = await response.json();
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
-      "No suggestions generated.";
+    const text = await callLLM([{ text: prompt }]);
 
     // 8️⃣ Parse formatted suggestions
     const suggestions = text

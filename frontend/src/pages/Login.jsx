@@ -48,13 +48,13 @@ const Login = () => {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <Sparkles className="h-12 w-12 text-magical-purple elixir-glow" />
+              <Sparkles className="h-12 w-12 text-medical-purple medicine-glow" />
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">
               MedKnock
             </h1>
             <p className="text-muted-foreground">
-              Welcome back to your grimoire
+              Welcome back to your medications
             </p>
           </div>
 
@@ -79,7 +79,7 @@ const Login = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  placeholder="alchemist@example.com"
+                  placeholder="medical@example.com"
                   className="mt-2"
                   required
                 />
@@ -93,7 +93,7 @@ const Login = () => {
                   </Label>
                   <Link
                     to="/forgot-password"
-                    className="text-sm text-magical-purple hover:underline font-semibold"
+                    className="text-sm text-medical-purple hover:underline font-semibold"
                   >
                     Forgot password?
                   </Link>
@@ -105,7 +105,7 @@ const Login = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, password: e.target.value })
                   }
-                  placeholder="Your secret spell"
+                  placeholder="Your secret process"
                   className="mt-2"
                   required
                 />
@@ -113,10 +113,10 @@ const Login = () => {
 
               <Button
                 type="submit"
-                className="magical-button w-full"
+                className="medical-button w-full"
                 disabled={isLoading}
               >
-                {isLoading ? "Casting login spell..." : "Enter Grimoire"}
+                {isLoading ? "Casting login process..." : "Enter Medications"}
               </Button>
             </form>
 
@@ -135,12 +135,12 @@ const Login = () => {
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                New alchemist?{" "}
+                New medical?{" "}
                 <Link
                   to="/register"
-                  className="text-magical-purple hover:underline font-semibold"
+                  className="text-medical-purple hover:underline font-semibold"
                 >
-                  Create your grimoire
+                  Create your medications
                 </Link>
               </p>
             </div>
