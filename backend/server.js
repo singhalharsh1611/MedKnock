@@ -8,7 +8,7 @@ import chatbotRouter from "./routes/chatbotRouter.js"
 import notificationRouter from "./routes/notificationRouter.js"
 import webScraperRouter from "./routes/webScraperRouter.js"
 import statsRouter from "./routes/statsRouter.js"
-import {startCronJobs} from './cron/cron-job.js'
+import { setupCronJobs } from './workers/queue.js';
 import passport from "passport";
 import passportSetup from "./config/passport.js";
 import session from "express-session";
@@ -53,9 +53,9 @@ app.use('/api/v1/stats', statsRouter);
 app.use("/api/v1/reports", reportRouter);
 app.use("/api/v1/prescriptions", prescriptionRouter);
 
-startCronJobs();
+setupCronJobs().catch(console.error);
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 

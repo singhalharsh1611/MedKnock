@@ -1,48 +1,28 @@
-import { sendNotification } from "../utils/pushClient.js";
-import prisma from "../config/prismaClient.js";
+import { NotificationService } from "../services/notificationService.js";
 
 export const saveFcmToken = async (req, res, next) => {
-    try {
-        const { fcmToken } = req.body;
-        const userId = req.user?.id;
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-        if (!fcmToken) {
-            return res.status(400).json({ message: 'fcmToken is required' });
-        }
-
-        // Find the user and update their fcmToken field
-        const user = await prisma.user.update({
-            where: { id: userId },
-            data: { fcmToken: fcmToken }
-        }).catch(() => null);
-
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        return res.status(200).json({ message: 'FCM token saved successfully' });
-
-    } catch (err) {
-        next(err);
-    }
+    await NotificationService.saveFcmToken(userId, req.body.fcmToken);
+    return res.status(200).json({ message: 'FCM token saved successfully' });
+  } catch (err) {
+    if (err.message === "fcmToken is required") return res.status(400).json({ message: err.message });
+    if (err.message === "User not found") return res.status(404).json({ message: err.message });
+    next(err);
+  }
 };
 
 export const testNotification = async (req, res, next) => {
-    try {
-        const user = await prisma.user.findUnique({ where: { id: req.user?.id } });
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-        if (!user || !user.fcmToken) {
-            return res.status(404).json({ message: 'User or FCM token not found.' });
-        }
-
-        const title = "MedKnock Test ✨";
-        const body = "Your connection to the arcane realm is working perfectly!";
-
-        await sendNotification(user.fcmToken, title, body);
-
-        return res.status(200).json({ message: 'Test notification sent!' });
-    } catch (err) {
-        next(err);
-    }
+    await NotificationService.testNotification(userId);
+    return res.status(200).json({ message: 'Test notification sent!' });
+  } catch (err) {
+    if (err.message === "User or FCM token not found.") return res.status(404).json({ message: err.message });
+    next(err);
+  }
 };
-
