@@ -1,5 +1,4 @@
 import * as cheerio from "cheerio";
-import { pickBestMatch } from "../utils/searchUtils.js";
 
 export async function scrapePharmEasy(medicineName) {
     const searchUrl = `https://pharmeasy.in/search/all?name=${encodeURIComponent(medicineName)}`;
@@ -18,27 +17,17 @@ export async function scrapePharmEasy(medicineName) {
         const html = await res.text();
         const $ = cheerio.load(html);
         
+        // Trust PharmEasy's relevance sort — pick first card
         const cardSelector = 'a[class*="ProductCard_medicineUnitWrapper"]';
-        const cards = $(cardSelector);
-        if (!cards.length) return null;
+        const firstCard = $(cardSelector).first();
+        if (!firstCard.length) return null;
 
-        // Collect up to 10 results to score
-        const candidates = [];
-        cards.slice(0, 10).each((_, el) => {
-            const card = $(el);
-            const name = card.find("h1[class*='ProductCard_medicineName']").text().trim();
-            const price = card.find("div[class*='ProductCard_ourPrice']").text().trim().replace(/\*$/, "");
-            const relativeUrl = card.attr("href");
-            const productUrl = relativeUrl?.startsWith("http") ? relativeUrl : `https://pharmeasy.in${relativeUrl}`;
-            if (name) candidates.push({ name, price, productUrl });
-        });
+        const productName = firstCard.find("h1[class*='ProductCard_medicineName']").text().trim();
+        const price = firstCard.find("div[class*='ProductCard_ourPrice']").text().trim().replace(/\*$/, "");
+        const relativeUrl = firstCard.attr("href");
+        const productUrl = relativeUrl?.startsWith("http") ? relativeUrl : `https://pharmeasy.in${relativeUrl}`;
 
-        if (candidates.length === 0) return null;
-
-        // Pick the best dosage match
-        const best = pickBestMatch(medicineName, candidates) || candidates[0];
-
-        return { vendor: "PharmEasy", productName: best.name, price: best.price, productUrl: best.productUrl };
+        return { vendor: "PharmEasy", productName, price, productUrl };
     } catch (err) {
         console.error("PharmEasy scrape failed:", err.message);
         return null;
