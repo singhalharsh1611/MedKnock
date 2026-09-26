@@ -1,47 +1,38 @@
-import { chromium } from "playwright";
-import * as cheerio from "cheerio";
+import fetch from "node-fetch";
 
 export async function scrapeNetmeds(medicineName) {
-  let browser = null;
-  let page = null;
   try {
-    browser = await chromium.launch({ 
-        headless: true,
-        args: ['--disable-gpu', '--disable-dev-shm-usage', '--no-sandbox']
-    });
-    page = await browser.newPage();
-
-    // Block heavy resources to save massive CPU/RAM and speed up load times
-    await page.route('**/*', (route) => {
-        const type = route.request().resourceType();
-        if (['image', 'stylesheet', 'font', 'media', 'other'].includes(type)) {
-            route.abort();
-        } else {
-            route.continue();
-        }
+    const searchUrl = `https://www.netmeds.com/ext/search/application/api/v1.0/products?page_id=%2A&page_size=12&q=${encodeURIComponent(medicineName)}`;
+    
+    const response = await fetch(searchUrl, {
+      headers: {
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'accept': 'application/json'
+      }
     });
 
-    const searchUrl = `https://www.netmeds.com/products?q=${encodeURIComponent(medicineName)}`;
-    await page.goto(searchUrl, { waitUntil: "domcontentloaded" });
+    if (!response.ok) return null;
 
-    const cardSelector = ".product-card-container";
-    await page.waitForSelector(cardSelector, { timeout: 15000 });
+    const data = await response.json();
+    if (!data.items || data.items.length === 0) return null;
 
-    const $ = cheerio.load(await page.content());
-    const firstCard = $(cardSelector).first();
-    if (!firstCard.length) return null;
+    const item = data.items[0];
+    const productName = item.name;
+    const priceStr = item.price?.effective?.min;
+    
+    if (!productName || priceStr === undefined) return null;
 
-    const productName = firstCard.find("h3").first().text().trim();
-    const price = firstCard.find(".priceDisplay").first().text().trim();
-    const relativeLink = firstCard.find("a").attr("href");
-    const productUrl = relativeLink?.startsWith("http") ? relativeLink : `https://www.netmeds.com${relativeLink}`;
+    // Use a search page as fallback since exact product URLs are difficult to map from slug directly
+    const productUrl = `https://www.netmeds.com/product/${item.slug || encodeURIComponent(medicineName)}`;
 
-    return { vendor: "Netmeds", productName, price, productUrl };
+    return { 
+      vendor: "Netmeds", 
+      productName, 
+      price: `₹${priceStr}`, 
+      productUrl 
+    };
   } catch (err) {
     console.error("Netmeds scrape failed:", err.message);
     return null;
-  } finally {
-    if (page) await page.close();
-    if (browser) await browser.close();
   }
 }
