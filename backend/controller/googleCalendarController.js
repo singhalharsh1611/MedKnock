@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { google } from "googleapis";
 import prisma from "../config/prismaClient.js";
 import { oAuth2Client, SCOPES } from "../config/googleCalendar.js";
-import { syncDosesToGoogleCalendar } from "./scheduleController.js";
+import { GoogleCalendarService } from "../services/googleCalendarService.js";
 
 // Step 1: Generate Google OAuth URL
 export const connectGoogleCalendar = async (req, res) => {
@@ -51,7 +51,7 @@ export const googleCalendarCallback = async (req, res) => {
       },
     });
 
-    await syncDosesToGoogleCalendar(user);
+    await GoogleCalendarService.syncDosesToGoogleCalendar(user);
 
     res.redirect(`${process.env.FRONTEND_URL}/profile?calendar_connected=true`);
   } catch (error) {
