@@ -1,3 +1,5 @@
+import { pickBestMatch } from "../utils/searchUtils.js";
+
 export async function scrape1mg(medicineName, userCity = "New Delhi") {
     const url = new URL("https://www.1mg.com/pwa-api/api/v4/search/all");
     
@@ -27,18 +29,26 @@ export async function scrape1mg(medicineName, userCity = "New Delhi") {
         const responseData = await res.json();
         if (!responseData?.data?.search_results) return null;
         
-        const results = responseData.data.search_results;
-        const bestAvailableResult = results.find(item => item.available === true && item.type === "drug");
+        // Only consider available drugs
+        const available = responseData.data.search_results.filter(
+            item => item.available === true && item.type === "drug"
+        );
+
+        if (available.length === 0) return null;
+
+        // Map to a shape pickBestMatch understands
+        const candidates = available.map(item => ({ ...item, name: item.name }));
+
+        // Pick the best dosage match, fall back to first available if no dosage in query
+        const best = pickBestMatch(medicineName, candidates) || candidates[0];
         
-        if (!bestAvailableResult) return null;
-        
-        let finalPrice = bestAvailableResult.prices?.discounted_price || bestAvailableResult.prices?.mrp || "N/A";
+        const finalPrice = best.prices?.discounted_price || best.prices?.mrp || "N/A";
 
         return {
             vendor: "1mg",
-            productName: bestAvailableResult.name,
+            productName: best.name,
             price: finalPrice.toString().includes("₹") ? finalPrice : `₹${finalPrice}`,
-            productUrl: `https://www.1mg.com${bestAvailableResult.url}`
+            productUrl: `https://www.1mg.com${best.url}`
         };
         
     } catch (err) {

@@ -1,4 +1,5 @@
 import fetch from "node-fetch";
+import { pickBestMatch } from "../utils/searchUtils.js";
 
 export async function scrapeNetmeds(medicineName) {
   try {
@@ -16,20 +17,31 @@ export async function scrapeNetmeds(medicineName) {
     const data = await response.json();
     if (!data.items || data.items.length === 0) return null;
 
-    const item = data.items[0];
-    const productName = item.name;
-    const priceStr = item.price?.effective?.min;
-    
-    if (!productName || priceStr === undefined) return null;
+    // Map to candidates with a consistent shape pickBestMatch understands
+    const candidates = data.items
+      .filter(item => item.sellable !== false)
+      .slice(0, 10)
+      .map(item => ({
+        name: item.name,
+        priceStr: item.price?.effective?.min,
+        slug: item.action?.page?.params?.slug?.[0]
+      }))
+      .filter(c => c.name && c.priceStr !== undefined);
 
-    // Use a search page as fallback since exact product URLs are difficult to map from slug directly
-    const productUrl = `https://www.netmeds.com/product/${item.slug || encodeURIComponent(medicineName)}`;
+    if (candidates.length === 0) return null;
 
-    return { 
-      vendor: "Netmeds", 
-      productName, 
-      price: `₹${priceStr}`, 
-      productUrl 
+    // Pick the best dosage match
+    const best = pickBestMatch(medicineName, candidates) || candidates[0];
+
+    const productUrl = best.slug
+      ? `https://www.netmeds.com/prescriptions/${best.slug}`
+      : `https://www.netmeds.com/catalogsearch/result/${encodeURIComponent(medicineName)}/all`;
+
+    return {
+      vendor: "Netmeds",
+      productName: best.name,
+      price: `₹${best.priceStr}`,
+      productUrl
     };
   } catch (err) {
     console.error("Netmeds scrape failed:", err.message);
