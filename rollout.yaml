@@ -1,0 +1,106 @@
+# MedKnock – rollout.host deployment
+# Deploy all services: frontend, backend (API), worker, postgres, redis
+# Run: rollout deploy (from project root)
+
+services:
+
+  # ─── Postgres Database ───────────────────────────────────────────────────────
+  - name: medknock-db
+    type: postgres
+    plan: free
+
+  # ─── Redis (for BullMQ + caching) ────────────────────────────────────────────
+  - name: medknock-redis
+    type: redis
+    plan: free
+
+  # ─── Backend API (Express) ───────────────────────────────────────────────────
+  - name: medknock-api
+    type: web
+    plan: free
+    root: backend
+    build: npm install && npx prisma generate && npx prisma db push --skip-generate
+    start: node server.js
+    env:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: ${{ medknock-db.DATABASE_URL }}
+      REDIS_URL: ${{ medknock-redis.REDIS_URL }}
+      FRONTEND_URL: ${{ medknock-frontend.URL }}
+      BACKEND_URL: ${{ medknock-api.URL }}
+      # ── Secrets: set these in the Rollout dashboard ──
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      FIREBASE_TYPE: ${{ secrets.FIREBASE_TYPE }}
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_PRIVATE_KEY_ID: ${{ secrets.FIREBASE_PRIVATE_KEY_ID }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_CLIENT_ID: ${{ secrets.FIREBASE_CLIENT_ID }}
+      FIREBASE_AUTH_URI: ${{ secrets.FIREBASE_AUTH_URI }}
+      FIREBASE_TOKEN_URI: ${{ secrets.FIREBASE_TOKEN_URI }}
+      FIREBASE_AUTH_PROVIDER_X509_CERT_URL: ${{ secrets.FIREBASE_AUTH_PROVIDER_X509_CERT_URL }}
+      FIREBASE_CLIENT_X509_CERT_URL: ${{ secrets.FIREBASE_CLIENT_X509_CERT_URL }}
+      SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+      TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+      TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+      TWILIO_WHATSAPP_NUMBER: ${{ secrets.TWILIO_WHATSAPP_NUMBER }}
+      TWILIO_CONTENT_SID: ${{ secrets.TWILIO_CONTENT_SID }}
+      SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+      SENDGRID_VERIFIED_SENDER: ${{ secrets.SENDGRID_VERIFIED_SENDER }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }}
+      OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL }}
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      APOLLO_DEVICE_ID: ${{ secrets.APOLLO_DEVICE_ID }}
+      APOLLO_PUBLIC_TOKEN: ${{ secrets.APOLLO_PUBLIC_TOKEN }}
+
+  # ─── BullMQ Worker (background job processor) ────────────────────────────────
+  - name: medknock-worker
+    type: worker
+    plan: free
+    root: backend
+    build: npm install && npx prisma generate
+    start: node worker.js
+    env:
+      NODE_ENV: production
+      DATABASE_URL: ${{ medknock-db.DATABASE_URL }}
+      REDIS_URL: ${{ medknock-redis.REDIS_URL }}
+      # ── Secrets: same as API ──
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      FIREBASE_TYPE: ${{ secrets.FIREBASE_TYPE }}
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_PRIVATE_KEY_ID: ${{ secrets.FIREBASE_PRIVATE_KEY_ID }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_CLIENT_ID: ${{ secrets.FIREBASE_CLIENT_ID }}
+      FIREBASE_AUTH_URI: ${{ secrets.FIREBASE_AUTH_URI }}
+      FIREBASE_TOKEN_URI: ${{ secrets.FIREBASE_TOKEN_URI }}
+      FIREBASE_AUTH_PROVIDER_X509_CERT_URL: ${{ secrets.FIREBASE_AUTH_PROVIDER_X509_CERT_URL }}
+      FIREBASE_CLIENT_X509_CERT_URL: ${{ secrets.FIREBASE_CLIENT_X509_CERT_URL }}
+      TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+      TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+      TWILIO_WHATSAPP_NUMBER: ${{ secrets.TWILIO_WHATSAPP_NUMBER }}
+      TWILIO_CONTENT_SID: ${{ secrets.TWILIO_CONTENT_SID }}
+      SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+      SENDGRID_VERIFIED_SENDER: ${{ secrets.SENDGRID_VERIFIED_SENDER }}
+      OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }}
+      OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL }}
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+
+  # ─── Frontend (Vite React) ────────────────────────────────────────────────────
+  - name: medknock-frontend
+    type: static
+    plan: free
+    root: frontend
+    build: npm install && npm run build
+    output: dist
+    env:
+      VITE_BACKEND_URL: ${{ medknock-api.URL }}

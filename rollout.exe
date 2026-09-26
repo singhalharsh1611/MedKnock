@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,200..900;1,62..125,200..900&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/rollout-192.png" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101116" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F8FAFD" />
+    <meta name="application-name" content="Rollout" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rollout — Deploy your app for free</title>
+    <meta name="description" content="Deploy a website, API, worker, or Postgres app in minutes. Get a live HTTPS URL, logs, and a simple path to production." />
+    <meta property="og:title" content="Rollout — Deploy your app for free" />
+    <meta property="og:description" content="Deploy a website, API, worker, or Postgres app in minutes. Get a live HTTPS URL, logs, and a simple path to production." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://rollout.host" />
+    <meta property="og:image" content="https://rollout.host/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Rollout — Deploy your app for free" />
+    <meta name="twitter:description" content="Deploy a website, API, worker, or Postgres app in minutes. Get a live HTTPS URL, logs, and a simple path to production." />
+    <meta name="twitter:image" content="https://rollout.host/og.png" />
+    <script type="module" crossorigin src="/assets/index-BR8AIFQa.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DXroCFHf.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
