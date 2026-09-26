@@ -70,6 +70,8 @@ model Schedule {
   updatedAt      DateTime  @updatedAt
 
   doseLogs       DoseLog[]
+
+  @@index([userId])
 }
 
 model DoseLog {
@@ -80,6 +82,9 @@ model DoseLog {
   userId      String
   status      String
   timestamp   DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@index([scheduleId])
 }
 
 model Report {
@@ -93,4 +98,6 @@ model Report {
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@index([userId])
 }
