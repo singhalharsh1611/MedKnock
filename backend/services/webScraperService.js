@@ -1,4 +1,3 @@
-import { scrapeApollo } from "../scrapers/scrapeApollo.js";
 import { scrapeNetmeds } from "../scrapers/scrapeNetmeds.js";
 import { scrape1mg } from "../scrapers/scrape1mg.js";
 import { scrapePharmEasy } from "../scrapers/scrapePharmEasy.js";
@@ -9,7 +8,6 @@ export class WebScraperService {
     const cleanedQuery = cleanMedicineName(medicineName);
 
     const results = await Promise.all([
-      scrapeApollo(cleanedQuery),
       scrapeNetmeds(cleanedQuery),
       scrape1mg(cleanedQuery),
       scrapePharmEasy(cleanedQuery)
