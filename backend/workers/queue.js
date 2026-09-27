@@ -4,26 +4,35 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const redisConfig = process.env.REDIS_URL || { host: "127.0.0.1", port: 6379, maxRetriesPerRequest: null };
-const connection = new Redis(redisConfig);
+const connection = process.env.REDIS_URL 
+  ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null })
+  : new Redis({ host: "127.0.0.1", port: 6379, maxRetriesPerRequest: null });
 
 export const cronQueue = new Queue("cron-jobs", { connection });
 
 export const setupCronJobs = async () => {
-  // Clear any existing repeatable jobs to avoid duplicates if schedule changes
-  const repeatableJobs = await cronQueue.getRepeatableJobs();
-  for (const job of repeatableJobs) {
-    await cronQueue.removeRepeatableByKey(job.key);
-  }
-
+  // Use BullMQ v6 Job Schedulers instead of deprecated getRepeatableJobs
+  
   // 1. Every 10 minutes: check missed doses
-  await cronQueue.add("check-missed-doses", {}, { repeat: { pattern: "*/10 * * * *" } });
+  await cronQueue.upsertJobScheduler(
+    "missed-doses-scheduler",
+    { pattern: "*/10 * * * *" },
+    { name: "check-missed-doses", data: {} }
+  );
 
   // 2. Every minute: medication reminders
-  await cronQueue.add("medication-reminders", {}, { repeat: { pattern: "* * * * *" } });
+  await cronQueue.upsertJobScheduler(
+    "medication-reminders-scheduler",
+    { pattern: "* * * * *" },
+    { name: "medication-reminders", data: {} }
+  );
 
   // 3. Every 6 hours: low stock alert
-  await cronQueue.add("low-stock-alert", {}, { repeat: { pattern: "0 */6 * * *" } });
+  await cronQueue.upsertJobScheduler(
+    "low-stock-alert-scheduler",
+    { pattern: "0 */6 * * *" },
+    { name: "low-stock-alert", data: {} }
+  );
 
-  console.log("BullMQ repeatable cron jobs initialized.");
+  console.log("BullMQ Job Schedulers initialized successfully.");
 };

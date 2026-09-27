@@ -52,23 +52,72 @@ export const ChatbotWindow = ({ isOpen, onClose }) => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(`${backendUrl}/api/v1/chatbot`,
-        { question: inputValue, history: messages },
+      const response = await fetch(`${backendUrl}/api/v1/chatbot`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ question: inputValue, history: messages }),
+      });
+
+      if (!response.ok) throw new Error("Failed to connect");
+
+      const botMessageId = (Date.now() + 1).toString();
+      setMessages((prev) => [
+        ...prev,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          id: botMessageId,
+          content: "",
+          sender: 'bot',
+          timestamp: new Date(),
         }
-      );
+      ]);
 
-      const botMessage = {
-        id: (Date.now() + 1).toString(),
-        content: response.data.answer,
-        sender: 'bot',
-        timestamp: new Date(),
-      };
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let done = false;
+      let buffer = "";
 
-      setMessages((prev) => [...prev, botMessage]);
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+          
+          let boundary = buffer.indexOf("\n\n");
+          while (boundary !== -1) {
+            const chunk = buffer.slice(0, boundary);
+            buffer = buffer.slice(boundary + 2);
+            
+            const lines = chunk.split("\n");
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const data = line.replace("data: ", "").trim();
+                if (data === "[DONE]") {
+                  done = true;
+                  break;
+                }
+                try {
+                  const parsed = JSON.parse(data);
+                  if (parsed.text) {
+                    setMessages((prev) =>
+                      prev.map((msg) =>
+                        msg.id === botMessageId
+                          ? { ...msg, content: msg.content + parsed.text }
+                          : msg
+                      )
+                    );
+                  }
+                } catch (e) {
+                  console.error("Error parsing SSE data:", e);
+                }
+              }
+            }
+            boundary = buffer.indexOf("\n\n");
+          }
+        }
+      }
     }
     catch (error) {
       console.error("Error fetching bot response:", error);

@@ -49,9 +49,9 @@ const FeatureCard = ({ feature }) => {
         }}
       />
 
-      <div className="relative p-8 backdrop-blur-md h-full z-10">
+      <div className="relative p-8 backdrop-blur-md h-full z-10 text-center">
         <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"
+          className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"
           style={{
             background: `linear-gradient(135deg, ${feature.from}, ${feature.to})`,
           }}

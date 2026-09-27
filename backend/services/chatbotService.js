@@ -1,8 +1,8 @@
 import prisma from "../config/prismaClient.js";
-import { callLLM } from "../utils/llmClient.js";
+import { callLLM, streamLLM } from "../utils/llmClient.js";
 
 export class ChatbotService {
-  static async getChatbotResponse(userId, question, history) {
+  static async getChatbotResponseStream(userId, question, history, onChunk) {
     if (!question) throw new Error("Question is required.");
 
     const schedules = await prisma.schedule.findMany({ where: { userId } });
@@ -35,7 +35,6 @@ export class ChatbotService {
       YOUR ANSWER:
     `;
 
-    const answer = await callLLM([{ text: prompt }]) || "I'm sorry, I couldn't find an answer. Please try again.";
-    return answer;
+    await streamLLM([{ text: prompt }], onChunk);
   }
 }

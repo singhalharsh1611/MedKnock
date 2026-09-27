@@ -9,8 +9,9 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const redisConfig = process.env.REDIS_URL || { host: "127.0.0.1", port: 6379, maxRetriesPerRequest: null };
-const connection = new Redis(redisConfig);
+const connection = process.env.REDIS_URL 
+  ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null })
+  : new Redis({ host: "127.0.0.1", port: 6379, maxRetriesPerRequest: null });
 
 const getTimeForToday = (timeStr) => {
   const [hours, minutes] = timeStr.split(":").map(Number);
